@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500">
+  <rect width="800" height="500" fill="#D1FAE5" rx="20"/>
+  <rect x="150" y="200" width="500" height="20" fill="#9CA3AF" rx="5"/>
+  <rect x="340" y="80" width="120" height="130" fill="#F3F4F6" rx="10" stroke="#D1D5DB" stroke-width="3"/>
+  <rect x="360" y="160" width="35" height="50" fill="#92400E" rx="3"/>
+  <rect x="380" y="100" width="60" height="40" fill="#BFDBFE" rx="3"/>
+  <text x="400" y="60" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" fill="#6B7280">SCHOOL</text>
+  <circle cx="250" cy="290" r="30" fill="#FBBF24"/>
+  <circle cx="250" cy="260" r="20" fill="#FBBF24"/>
+  <circle cx="550" cy="290" r="30" fill="#A78BFA"/>
+  <circle cx="550" cy="260" r="20" fill="#A78BFA"/>
+  <line x1="250" y1="310" x2="550" y2="310" stroke="#F472B6" stroke-width="3" stroke-dasharray="8,4"/>
+  <text x="400" y="440" text-anchor="middle" font-family="Arial, sans-serif" font-size="36" fill="#065F46" font-weight="bold">Going Home</text>
+</svg>

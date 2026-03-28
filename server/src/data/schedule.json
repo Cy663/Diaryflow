@@ -1,0 +1,44 @@
+[
+  {
+    "startTime": "08:00",
+    "endTime": "08:45",
+    "activity": "Morning Commute",
+    "location": "Metrotown to NEU",
+    "imageKey": "transit"
+  },
+  {
+    "startTime": "09:00",
+    "endTime": "10:30",
+    "activity": "Reading Class",
+    "location": "NEU Vancouver",
+    "imageKey": "reading-corner"
+  },
+  {
+    "startTime": "10:45",
+    "endTime": "12:00",
+    "activity": "Math Class",
+    "location": "NEU Vancouver",
+    "imageKey": "math-class"
+  },
+  {
+    "startTime": "12:15",
+    "endTime": "13:00",
+    "activity": "Lunch Break",
+    "location": "McDonald's near NEU",
+    "imageKey": "mcdonalds"
+  },
+  {
+    "startTime": "13:30",
+    "endTime": "15:00",
+    "activity": "Art Class",
+    "location": "Granville Island",
+    "imageKey": "granville-island"
+  },
+  {
+    "startTime": "15:15",
+    "endTime": "16:00",
+    "activity": "Heading Home",
+    "location": "Granville Island to Metrotown",
+    "imageKey": "transit-home"
+  }
+]

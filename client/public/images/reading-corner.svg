@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500">
+  <rect width="800" height="500" fill="#DBEAFE" rx="20"/>
+  <rect x="250" y="100" width="300" height="40" fill="#3B82F6" rx="5"/>
+  <rect x="250" y="150" width="300" height="40" fill="#3B82F6" rx="5"/>
+  <rect x="250" y="200" width="300" height="40" fill="#3B82F6" rx="5"/>
+  <rect x="260" y="110" width="60" height="25" fill="#EF4444" rx="3"/>
+  <rect x="330" y="110" width="60" height="25" fill="#10B981" rx="3"/>
+  <rect x="400" y="110" width="60" height="25" fill="#8B5CF6" rx="3"/>
+  <rect x="260" y="160" width="60" height="25" fill="#F59E0B" rx="3"/>
+  <rect x="330" y="160" width="60" height="25" fill="#EC4899" rx="3"/>
+  <rect x="260" y="210" width="60" height="25" fill="#06B6D4" rx="3"/>
+  <rect x="330" y="210" width="60" height="25" fill="#EF4444" rx="3"/>
+  <rect x="400" y="210" width="60" height="25" fill="#10B981" rx="3"/>
+  <rect x="320" y="290" width="160" height="120" fill="#F3F4F6" rx="10" transform="rotate(-10 400 350)"/>
+  <rect x="330" y="300" width="140" height="100" fill="#FBBF24" rx="5" transform="rotate(-10 400 350)"/>
+  <text x="400" y="450" text-anchor="middle" font-family="Arial, sans-serif" font-size="36" fill="#1E40AF" font-weight="bold">Reading Corner</text>
+</svg>

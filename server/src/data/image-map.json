@@ -1,0 +1,26 @@
+{
+  "transit": {
+    "photo": "/images/transit.jpg",
+    "illustration": "/images/school-bus.svg"
+  },
+  "reading-corner": {
+    "photo": "/images/reading-corner.jpg",
+    "illustration": "/images/reading-corner.svg"
+  },
+  "math-class": {
+    "photo": "/images/math-class.jpg",
+    "illustration": "/images/math-class.svg"
+  },
+  "mcdonalds": {
+    "photo": "/images/mcdonalds.jpg",
+    "illustration": "/images/cafeteria.svg"
+  },
+  "granville-island": {
+    "photo": "/images/granville-island.jpg",
+    "illustration": "/images/art-room.svg"
+  },
+  "transit-home": {
+    "photo": "/images/transit-home.jpg",
+    "illustration": "/images/pickup.svg"
+  }
+}
