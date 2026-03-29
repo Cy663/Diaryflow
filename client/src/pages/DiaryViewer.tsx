@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import type { Diary } from 'shared/types/diary';
 import { generateDiary } from '../api/diary';
 import MiniMap from '../components/MiniMap';
@@ -7,6 +7,7 @@ import MiniMap from '../components/MiniMap';
 function DiaryViewer() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [diary, setDiary] = useState<Diary | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -15,7 +16,16 @@ function DiaryViewer() {
   const childName = searchParams.get('name') || 'Alex';
   const date = searchParams.get('date') || new Date().toISOString().split('T')[0];
 
+  // Check if diary was passed via route state (from Create flow)
+  const stateDiary = (location.state as { diary?: Diary } | null)?.diary;
+
   useEffect(() => {
+    if (stateDiary) {
+      setDiary(stateDiary);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     generateDiary({ date, childName })
@@ -25,7 +35,7 @@ function DiaryViewer() {
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [date, childName]);
+  }, [date, childName, stateDiary]);
 
   if (loading) {
     return (
@@ -61,53 +71,58 @@ function DiaryViewer() {
   const page = diary.pages[currentPage];
   const isFirst = currentPage === 0;
   const isLast = currentPage === diary.pages.length - 1;
+  const hasGps = diary.gpsTrace.length > 0;
 
   return (
     <div className="min-h-screen bg-amber-50 flex flex-col items-center justify-center p-4">
       {/* Header */}
       <div className="text-center mb-4">
-        <h1 className="text-3xl font-bold text-amber-800">{childName}'s Day</h1>
-        <p className="text-amber-600">{date}</p>
+        <h1 className="text-3xl font-bold text-amber-800">{diary.childName}'s Day</h1>
+        <p className="text-amber-600">{diary.date}</p>
       </div>
 
-      {/* Diary Card - Horizontal */}
+      {/* Diary Card */}
       <div className="bg-white rounded-3xl shadow-xl max-w-3xl w-full overflow-hidden">
 
-        {/* Mini-map */}
-        <div className="bg-amber-50 border-b border-amber-100 px-4 pt-3 pb-1 h-[160px]">
-          <MiniMap
-            gpsTrace={diary.gpsTrace}
-            currentPageIndex={currentPage}
-            pages={diary.pages}
+        {/* Mini-map - only show if GPS data exists */}
+        {hasGps && (
+          <div className="bg-amber-50 border-b border-amber-100 px-4 pt-3 pb-1 h-[160px]">
+            <MiniMap
+              gpsTrace={diary.gpsTrace}
+              currentPageIndex={currentPage}
+              pages={diary.pages}
+            />
+          </div>
+        )}
+
+        {/* Photo */}
+        <div className="bg-amber-100 p-3">
+          <img
+            src={page.imageUrl}
+            alt={page.activity}
+            className="w-full h-64 object-cover rounded-xl"
           />
         </div>
 
-        {/* Dual images - side by side */}
-        <div className="flex gap-0">
-          {/* Real photo */}
-          <div className="w-1/2 bg-amber-100 p-3">
-            <img
-              src={page.imageUrl}
-              alt={page.activity}
-              className="w-full h-48 object-cover rounded-xl"
-            />
-          </div>
-          {/* SVG illustration */}
-          <div className="w-1/2 bg-orange-50 p-3">
+        {/* Illustration - only show if it exists */}
+        {page.illustrationUrl && (
+          <div className="bg-orange-50 p-3">
             <img
               src={page.illustrationUrl}
               alt={`${page.activity} illustration`}
               className="w-full h-48 object-contain rounded-xl"
             />
           </div>
-        </div>
+        )}
 
         {/* Content */}
         <div className="px-6 pt-4 pb-3 text-center">
           <div className="flex items-center justify-center gap-2 mb-3">
-            <span className="bg-amber-100 text-amber-700 text-sm px-3 py-1 rounded-full font-medium">
-              {page.timeRange}
-            </span>
+            {page.timeRange && (
+              <span className="bg-amber-100 text-amber-700 text-sm px-3 py-1 rounded-full font-medium">
+                {page.timeRange}
+              </span>
+            )}
             <span className="text-amber-600 text-sm">{page.activity}</span>
           </div>
           <p className="text-gray-700 text-lg leading-relaxed max-w-xl mx-auto">{page.text}</p>

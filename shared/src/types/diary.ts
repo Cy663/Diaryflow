@@ -37,3 +37,16 @@ export interface GenerateDiaryRequest {
 export interface GenerateDiaryResponse {
   diary: Diary;
 }
+
+export interface UploadedPhoto {
+  url: string;
+  label: string;
+  time: string;
+}
+
+export interface GenerateFromPhotosRequest {
+  childName: string;
+  date: string;
+  photos: UploadedPhoto[];
+  schedule?: ScheduleEntry[];
+}

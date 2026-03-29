@@ -1,7 +1,9 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import type { Diary, ScheduleEntry, GpsPoint } from '../../../shared/src/types/diary';
-import { generatePageText } from './llm';
+import type { Diary, ScheduleEntry, GpsPoint, UploadedPhoto } from '../../../shared/src/types/diary';
+import { generatePageText, generatePageTextFromPhoto } from './llm';
+
+const uploadsDir = join(__dirname, '..', '..', 'uploads');
 
 const dataDir = join(__dirname, '..', 'data');
 
@@ -48,7 +50,6 @@ export async function generateDiary(date: string, childName: string): Promise<Di
       const timeRange = formatTimeRange(entry.startTime, entry.endTime);
 
       const text = await generatePageText({
-        childName,
         activity: entry.activity,
         location,
         timeRange,
@@ -72,5 +73,66 @@ export async function generateDiary(date: string, childName: string): Promise<Di
     date,
     pages,
     gpsTrace,
+  };
+}
+
+export async function generateDiaryFromPhotos(
+  date: string,
+  childName: string,
+  photos: UploadedPhoto[],
+  schedule?: ScheduleEntry[],
+): Promise<Diary> {
+  const gpsTrace = loadJson<GpsPoint[]>('create-gps-trace.json');
+
+  const placeNames: string[] = [];
+
+  const pages = await Promise.all(
+    photos.map(async (photo, index) => {
+      const filename = photo.url.split('/').pop() || '';
+      const imagePath = join(uploadsDir, filename);
+
+      const entry = schedule?.[index];
+      const scheduleCtx = entry
+        ? {
+            activity: entry.activity,
+            timeRange: formatTimeRange(entry.startTime, entry.endTime),
+            location: entry.location,
+          }
+        : undefined;
+
+      const result = await generatePageTextFromPhoto(imagePath, scheduleCtx);
+      placeNames[index] = result.place;
+
+      const timeRange = entry
+        ? formatTimeRange(entry.startTime, entry.endTime)
+        : (photo.time || '');
+
+      return {
+        pageNumber: index + 1,
+        imageUrl: photo.url,
+        illustrationUrl: '',
+        text: result.text,
+        timeRange,
+        activity: result.activity,
+      };
+    }),
+  );
+
+  // Replace stop-N placeholder labels with LLM place names
+  const updatedGps = gpsTrace.map((point) => {
+    const match = point.label.match(/^stop-(\d+)$/);
+    if (match) {
+      const stopIndex = parseInt(match[1], 10) - 1;
+      const place = placeNames[stopIndex];
+      return { ...point, label: place || '' };
+    }
+    return point;
+  });
+
+  return {
+    childName,
+    date,
+    pages,
+    gpsTrace: updatedGps,
   };
 }

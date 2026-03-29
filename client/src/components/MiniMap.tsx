@@ -103,12 +103,12 @@ function MiniMap({ gpsTrace, currentPageIndex, pages }: MiniMapProps) {
   const currentPos = normalized[visibleEndIndex];
 
   // Key location labels (deduplicate by label, pick first occurrence)
+  // Show all unique location labels (deduplicate, skip transit labels)
   const keyLocations = useMemo(() => {
     const seen = new Set<string>();
     const locations: { x: number; y: number; label: string }[] = [];
-    const importantLabels = ['Metrotown Station', 'NEU Vancouver', "McDonald's", 'Granville Island'];
     for (const p of normalized) {
-      if (importantLabels.includes(p.label) && !seen.has(p.label)) {
+      if (p.label && !seen.has(p.label)) {
         seen.add(p.label);
         locations.push(p);
       }

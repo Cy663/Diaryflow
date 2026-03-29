@@ -18,6 +18,8 @@ import express from 'express';
 import cors from 'cors';
 import { healthRouter } from './routes/health';
 import { diaryRouter } from './routes/diary';
+import { photosRouter } from './routes/photos';
+import { scheduleRouter } from './routes/schedule';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -25,8 +27,11 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
 app.use('/api/health', healthRouter);
 app.use('/api/diary', diaryRouter);
+app.use('/api/photos', photosRouter);
+app.use('/api/schedule', scheduleRouter);
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

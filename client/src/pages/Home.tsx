@@ -1,15 +1,8 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 function Home() {
-  const [childName, setChildName] = useState('Alex');
   const navigate = useNavigate();
-
   const today = new Date().toISOString().split('T')[0];
-
-  const handleGenerate = () => {
-    navigate(`/diary?name=${encodeURIComponent(childName)}&date=${today}`);
-  };
 
   return (
     <div className="min-h-screen bg-amber-50 flex items-center justify-center p-4">
@@ -19,24 +12,31 @@ function Home() {
           A daily visual diary to help you and your child recall the day together
         </p>
 
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
-          <label className="block text-left text-amber-700 text-sm font-medium mb-2">
-            Child's Name
-          </label>
-          <input
-            type="text"
-            value={childName}
-            onChange={(e) => setChildName(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border-2 border-amber-200 focus:border-amber-400 focus:outline-none text-lg text-center"
-            placeholder="Enter name"
-          />
-
+        {/* Showcase card */}
+        <div className="bg-white rounded-2xl shadow-lg p-8 mb-4">
+          <h2 className="text-amber-700 font-semibold text-lg mb-3">Showcase Demo</h2>
+          <p className="text-amber-500 text-sm mb-5">
+            See a pre-built diary for Alex's school day
+          </p>
           <button
-            onClick={handleGenerate}
-            disabled={!childName.trim()}
-            className="mt-6 w-full bg-amber-500 hover:bg-amber-600 text-white text-xl font-semibold py-4 rounded-xl transition shadow-md hover:shadow-lg disabled:opacity-50 disabled:hover:bg-amber-500"
+            onClick={() => navigate(`/diary?name=Alex&date=${today}`)}
+            className="w-full bg-amber-500 hover:bg-amber-600 text-white text-xl font-semibold py-4 rounded-xl transition shadow-md hover:shadow-lg"
           >
-            Generate Today's Diary
+            View Demo Diary
+          </button>
+        </div>
+
+        {/* Create your own */}
+        <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
+          <h2 className="text-amber-700 font-semibold text-lg mb-2">Create Your Own</h2>
+          <p className="text-amber-500 text-sm mb-4">
+            Upload a schedule and photos to generate a real diary
+          </p>
+          <button
+            onClick={() => navigate('/create')}
+            className="w-full bg-orange-500 hover:bg-orange-600 text-white text-xl font-semibold py-4 rounded-xl transition shadow-md hover:shadow-lg"
+          >
+            Upload Photos &amp; Create
           </button>
         </div>
 
