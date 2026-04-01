@@ -26,6 +26,20 @@ function Home() {
           </button>
         </div>
 
+        {/* GPS Diary */}
+        <div className="bg-white rounded-2xl shadow-lg p-8 mb-4">
+          <h2 className="text-amber-700 font-semibold text-lg mb-2">GPS Diary</h2>
+          <p className="text-amber-500 text-sm mb-4">
+            Generate a diary from GPS coordinates alone — no photos needed
+          </p>
+          <button
+            onClick={() => navigate('/gps-create')}
+            className="w-full bg-orange-500 hover:bg-orange-600 text-white text-xl font-semibold py-4 rounded-xl transition shadow-md hover:shadow-lg"
+          >
+            GPS &rarr; Diary
+          </button>
+        </div>
+
         {/* Create your own */}
         <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
           <h2 className="text-amber-700 font-semibold text-lg mb-2">Create Your Own</h2>

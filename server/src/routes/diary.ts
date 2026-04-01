@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import type { GenerateDiaryRequest, GenerateDiaryResponse, GenerateFromPhotosRequest } from '../../../shared/src/types/diary';
+import type { GenerateDiaryRequest, GenerateDiaryResponse, GenerateFromPhotosRequest, GenerateFromGpsRequest } from '../../../shared/src/types/diary';
 import type { ApiError } from '../../../shared/src/types/api';
-import { generateDiary, generateDiaryFromPhotos } from '../services/diary-generator';
+import { generateDiary, generateDiaryFromPhotos, generateDiaryFromGps } from '../services/diary-generator';
 
 export const diaryRouter = Router();
 
@@ -50,6 +50,35 @@ diaryRouter.post('/generate-from-photos', async (req, res) => {
   } catch (err) {
     const error: ApiError = {
       error: 'Failed to generate diary from photos',
+      code: 500,
+      details: err instanceof Error ? err.message : String(err),
+    };
+    res.status(500).json(error);
+  }
+});
+
+diaryRouter.post('/generate-from-gps', async (req, res) => {
+  try {
+    const { childName = 'Alex', date, gpsPoints } = req.body as GenerateFromGpsRequest;
+
+    if (!date) {
+      const error: ApiError = { error: 'date is required', code: 400 };
+      res.status(400).json(error);
+      return;
+    }
+
+    if (!gpsPoints || gpsPoints.length === 0) {
+      const error: ApiError = { error: 'gpsPoints are required', code: 400 };
+      res.status(400).json(error);
+      return;
+    }
+
+    const diary = await generateDiaryFromGps(date, childName, gpsPoints);
+    const response: GenerateDiaryResponse = { diary };
+    res.json(response);
+  } catch (err) {
+    const error: ApiError = {
+      error: 'Failed to generate diary from GPS',
       code: 500,
       details: err instanceof Error ? err.message : String(err),
     };

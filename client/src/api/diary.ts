@@ -1,4 +1,4 @@
-import type { GenerateDiaryRequest, GenerateDiaryResponse, GenerateFromPhotosRequest, UploadedPhoto, ScheduleEntry } from 'shared/types/diary';
+import type { GenerateDiaryRequest, GenerateDiaryResponse, GenerateFromPhotosRequest, GenerateFromGpsRequest, UploadedPhoto, ScheduleEntry } from 'shared/types/diary';
 
 export async function generateDiary(req: GenerateDiaryRequest): Promise<GenerateDiaryResponse> {
   const res = await fetch('/api/diary/generate', {
@@ -56,6 +56,18 @@ export async function generateDiaryFromPhotos(req: GenerateFromPhotosRequest): P
   });
   if (!res.ok) {
     throw new Error(`Failed to generate diary: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function generateDiaryFromGps(req: GenerateFromGpsRequest): Promise<GenerateDiaryResponse> {
+  const res = await fetch('/api/diary/generate-from-gps', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to generate diary from GPS: ${res.status}`);
   }
   return res.json();
 }

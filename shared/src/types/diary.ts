@@ -50,3 +50,25 @@ export interface GenerateFromPhotosRequest {
   photos: UploadedPhoto[];
   schedule?: ScheduleEntry[];
 }
+
+export interface GpsInputPoint {
+  timestamp: string;
+  lat: number;
+  lng: number;
+}
+
+export interface StayCluster {
+  centroid: { lat: number; lng: number };
+  startTime: string;
+  endTime: string;
+  points: GpsInputPoint[];
+  placeName?: string;
+  placeTypes?: string[];
+  photoRef?: string;
+}
+
+export interface GenerateFromGpsRequest {
+  childName?: string;
+  date: string;
+  gpsPoints: GpsInputPoint[];
+}

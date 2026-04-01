@@ -20,6 +20,7 @@ import { healthRouter } from './routes/health';
 import { diaryRouter } from './routes/diary';
 import { photosRouter } from './routes/photos';
 import { scheduleRouter } from './routes/schedule';
+import { placesRouter } from './routes/places';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -32,6 +33,7 @@ app.use('/api/health', healthRouter);
 app.use('/api/diary', diaryRouter);
 app.use('/api/photos', photosRouter);
 app.use('/api/schedule', scheduleRouter);
+app.use('/api/places', placesRouter);
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

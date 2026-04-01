@@ -45,7 +45,7 @@ Output only the diary text.`;
 
     if (!res.ok) throw new Error(`OpenRouter returned ${res.status}`);
 
-    const data = await res.json();
+    const data: any = await res.json();
     const text = data.choices?.[0]?.message?.content?.trim();
     if (!text) throw new Error('Empty response');
     return text;
@@ -112,7 +112,7 @@ TEXT: ...`;
 
     if (!res.ok) throw new Error(`OpenRouter returned ${res.status}`);
 
-    const data = await res.json();
+    const data: any = await res.json();
     const raw = data.choices?.[0]?.message?.content?.trim();
     if (!raw) throw new Error('Empty response');
 
@@ -183,7 +183,7 @@ If you cannot parse it, return: []`;
 
     if (!res.ok) throw new Error(`OpenRouter returned ${res.status}`);
 
-    const data = await res.json();
+    const data: any = await res.json();
     const raw = data.choices?.[0]?.message?.content?.trim();
     if (!raw) throw new Error('Empty response');
 

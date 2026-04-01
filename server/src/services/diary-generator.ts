@@ -1,7 +1,10 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import type { Diary, ScheduleEntry, GpsPoint, UploadedPhoto } from '../../../shared/src/types/diary';
+import type { Diary, ScheduleEntry, GpsPoint, UploadedPhoto, GpsInputPoint } from '../../../shared/src/types/diary';
 import { generatePageText, generatePageTextFromPhoto } from './llm';
+import { clusterStays, buildGpsTrace } from './gps-clustering';
+import { enrichClustersWithPlaces } from './google-places';
+import { getFallbackImage } from './image-fallback';
 
 const uploadsDir = join(__dirname, '..', '..', 'uploads');
 
@@ -134,5 +137,79 @@ export async function generateDiaryFromPhotos(
     date,
     pages,
     gpsTrace: updatedGps,
+  };
+}
+
+function activityPrefix(placeTypes: string[]): string {
+  const joined = placeTypes.join(' ').toLowerCase();
+  if (/restaurant|food|cafe|bakery|meal/.test(joined)) return 'Lunch at';
+  if (/school|university|education|library/.test(joined)) return 'Class at';
+  if (/park|playground|amusement/.test(joined)) return 'Playing at';
+  if (/transit|bus_station|train_station|subway/.test(joined)) return 'Transit at';
+  return 'Visiting';
+}
+
+function isoToHHMM(iso: string): string {
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+export async function generateDiaryFromGps(
+  date: string,
+  childName: string,
+  gpsPoints: GpsInputPoint[],
+): Promise<Diary> {
+  const clusters = clusterStays(gpsPoints);
+
+  if (clusters.length === 0) {
+    throw new Error('No significant stops detected in GPS data');
+  }
+
+  await enrichClustersWithPlaces(clusters);
+
+  const pages = await Promise.all(
+    clusters.map(async (cluster, index) => {
+      const placeName = cluster.placeName || 'Unknown Place';
+      const types = cluster.placeTypes || [];
+      const prefix = activityPrefix(types);
+      const activity = `${prefix} ${placeName}`;
+      const startHHMM = isoToHHMM(cluster.startTime);
+      const endHHMM = isoToHHMM(cluster.endTime);
+      const timeRange = formatTimeRange(startHHMM, endHHMM);
+
+      let imageUrl: string;
+      if (cluster.photoRef) {
+        const encoded = Buffer.from(cluster.photoRef).toString('base64url');
+        imageUrl = `/api/places/photo/${encoded}`;
+      } else {
+        imageUrl = getFallbackImage(types);
+      }
+
+      const text = await generatePageText({
+        activity: placeName,
+        location: placeName,
+        timeRange,
+        pageNumber: index,
+        totalPages: clusters.length,
+      });
+
+      return {
+        pageNumber: index + 1,
+        imageUrl,
+        illustrationUrl: '',
+        text,
+        timeRange,
+        activity,
+      };
+    }),
+  );
+
+  const gpsTrace = buildGpsTrace(gpsPoints, clusters);
+
+  return {
+    childName,
+    date,
+    pages,
+    gpsTrace,
   };
 }
