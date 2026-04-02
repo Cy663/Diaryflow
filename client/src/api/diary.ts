@@ -1,13 +1,34 @@
-import type { GenerateDiaryRequest, GenerateDiaryResponse, GenerateFromPhotosRequest, GenerateFromGpsRequest, UploadedPhoto, ScheduleEntry } from 'shared/types/diary';
+import type { GenerateUnifiedRequest, GenerateDiaryResponse } from 'shared/types/diary';
+import type { DiaryListResponse } from 'shared/types/api';
+import { authFetch } from './auth';
 
-export async function generateDiary(req: GenerateDiaryRequest): Promise<GenerateDiaryResponse> {
-  const res = await fetch('/api/diary/generate', {
+export async function generateDiaryUnified(req: GenerateUnifiedRequest): Promise<GenerateDiaryResponse> {
+  const res = await authFetch('/api/diary/generate-unified', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(req),
   });
   if (!res.ok) {
     throw new Error(`Failed to generate diary: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function listDiaries(): Promise<DiaryListResponse> {
+  const res = await authFetch('/api/diary/list');
+  if (!res.ok) {
+    throw new Error(`Failed to list diaries: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function getDiary(date: string): Promise<GenerateDiaryResponse> {
+  const res = await authFetch(`/api/diary/${date}`);
+  if (!res.ok) {
+    if (res.status === 404) {
+      throw new Error('NOT_FOUND');
+    }
+    throw new Error(`Failed to get diary: ${res.status}`);
   }
   return res.json();
 }
@@ -16,13 +37,15 @@ export async function uploadPhotos(
   files: File[],
   labels: string[],
   times: string[],
-): Promise<UploadedPhoto[]> {
+  date: string,
+): Promise<{ url: string; label: string; time: string }[]> {
   const formData = new FormData();
   files.forEach((file) => formData.append('photos', file));
   labels.forEach((label) => formData.append('labels', label));
   times.forEach((time) => formData.append('times', time));
+  formData.append('date', date);
 
-  const res = await fetch('/api/photos/upload', {
+  const res = await authFetch('/api/photos/upload', {
     method: 'POST',
     body: formData,
   });
@@ -31,43 +54,4 @@ export async function uploadPhotos(
   }
   const data = await res.json();
   return data.photos;
-}
-
-export async function parseSchedule(file: File): Promise<ScheduleEntry[]> {
-  const formData = new FormData();
-  formData.append('schedule', file);
-
-  const res = await fetch('/api/schedule/parse', {
-    method: 'POST',
-    body: formData,
-  });
-  if (!res.ok) {
-    throw new Error(`Failed to parse schedule: ${res.status}`);
-  }
-  const data = await res.json();
-  return data.entries;
-}
-
-export async function generateDiaryFromPhotos(req: GenerateFromPhotosRequest): Promise<GenerateDiaryResponse> {
-  const res = await fetch('/api/diary/generate-from-photos', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(req),
-  });
-  if (!res.ok) {
-    throw new Error(`Failed to generate diary: ${res.status}`);
-  }
-  return res.json();
-}
-
-export async function generateDiaryFromGps(req: GenerateFromGpsRequest): Promise<GenerateDiaryResponse> {
-  const res = await fetch('/api/diary/generate-from-gps', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(req),
-  });
-  if (!res.ok) {
-    throw new Error(`Failed to generate diary from GPS: ${res.status}`);
-  }
-  return res.json();
 }

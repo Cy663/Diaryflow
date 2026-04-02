@@ -8,17 +8,22 @@ interface PageContext {
   timeRange: string;
   pageNumber: number;
   totalPages: number;
+  curriculumHint?: string;
 }
 
 /**
  * Generate diary text for showcase mode (from schedule data, no photo).
  */
 export async function generatePageText(context: PageContext): Promise<string> {
-  const { activity, location, timeRange } = context;
+  const { activity, location, timeRange, curriculumHint } = context;
 
   try {
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) throw new Error('No OPENROUTER_API_KEY');
+
+    const curriculumLine = curriculumHint
+      ? `\nThe school curriculum says this period is: ${curriculumHint}. Use this as context to enrich the entry.`
+      : '';
 
     const prompt = `Write 1-2 short sentences for a child's visual diary.
 Speak in second person ("you"). Warm and gentle tone.
@@ -27,7 +32,7 @@ Keep it brief — no more than 30 words. Do not use names or "dear".
 
 Activity: ${activity}
 Time: ${timeRange}
-Location: ${location}
+Location: ${location}${curriculumLine}
 
 Output only the diary text.`;
 
@@ -138,7 +143,7 @@ TEXT: ...`;
  * Parse a schedule image into structured entries using multimodal LLM.
  */
 export async function parseScheduleImage(imagePath: string): Promise<{
-  entries: { activity: string; startTime: string; endTime: string; location: string }[];
+  entries: { day: string; activity: string; startTime: string; endTime: string; location: string }[];
 }> {
   try {
     const apiKey = process.env.OPENROUTER_API_KEY;
@@ -150,16 +155,15 @@ export async function parseScheduleImage(imagePath: string): Promise<{
 
     const prompt = `You are looking at a photo of a school schedule or timetable.
 
-Extract each class/activity. For each one provide:
+Extract ALL classes/activities for ALL days of the week. For each one provide:
+- day: day of the week (e.g. "Monday", "Tuesday", etc.)
 - activity: class name
 - startTime: HH:MM (24h)
 - endTime: HH:MM (24h)
 - location: if visible, otherwise empty string
 
-If the schedule has multiple days, extract only the FIRST day (e.g. Monday).
-
 Return ONLY valid JSON array, no markdown fences:
-[{"activity":"...","startTime":"HH:MM","endTime":"HH:MM","location":"..."},...]
+[{"day":"Monday","activity":"...","startTime":"HH:MM","endTime":"HH:MM","location":"..."},...]
 
 If you cannot parse it, return: []`;
 
@@ -192,6 +196,69 @@ If you cannot parse it, return: []`;
     return { entries: Array.isArray(entries) ? entries : [] };
   } catch {
     return { entries: [] };
+  }
+}
+
+/**
+ * Use Gemini to decide which photo is more suitable for a diary page:
+ * the teacher's uploaded photo (primary) or a Google Places photo (secondary).
+ * Returns 'uploaded' or 'places'. Defaults to 'uploaded' on any error.
+ */
+export async function selectBestPhoto(
+  uploadedPhotoBase64: string,
+  uploadedMimeType: string,
+  placesPhotoBase64: string,
+  placesMimeType: string,
+  activity: string,
+  location: string,
+  curriculumHint?: string,
+): Promise<'uploaded' | 'places'> {
+  try {
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) throw new Error('No OPENROUTER_API_KEY');
+
+    const currLine = curriculumHint ? `\nCurriculum: ${curriculumHint}` : '';
+
+    const prompt = `You are choosing the best photo for a child's school diary page.
+
+Activity: ${activity}
+Location: ${location}${currLine}
+
+Photo A is taken by the teacher during the school day.
+Photo B is from Google Places showing the location.
+
+Choose the photo that best represents this activity for a child's diary.
+Photo A (teacher's photo) should be preferred unless it is clearly unrelated to the activity or of very poor quality.
+
+Reply with ONLY the letter: A or B`;
+
+    const res = await fetch(OPENROUTER_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash-lite',
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'text', text: prompt },
+            { type: 'image_url', image_url: { url: `data:${uploadedMimeType};base64,${uploadedPhotoBase64}` } },
+            { type: 'image_url', image_url: { url: `data:${placesMimeType};base64,${placesPhotoBase64}` } },
+          ],
+        }],
+      }),
+    });
+
+    if (!res.ok) throw new Error(`OpenRouter returned ${res.status}`);
+
+    const data: any = await res.json();
+    const raw = data.choices?.[0]?.message?.content?.trim()?.toUpperCase();
+    if (raw?.includes('B')) return 'places';
+    return 'uploaded'; // default to uploaded
+  } catch {
+    return 'uploaded'; // always prefer uploaded on error
   }
 }
 

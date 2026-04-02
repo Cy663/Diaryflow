@@ -1,19 +1,44 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Home from './pages/Home';
-import DiaryViewer from './pages/DiaryViewer';
-import Create from './pages/Create';
-import GpsCreate from './pages/GpsCreate';
+import { AuthProvider } from './contexts/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import RoleRedirect from './components/RoleRedirect';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import TeacherHome from './pages/teacher/TeacherHome';
+import TeacherCreate from './pages/teacher/TeacherCreate';
+import TeacherDiary from './pages/teacher/TeacherDiary';
+import StudentHome from './pages/student/StudentHome';
+import StudentDiary from './pages/student/StudentDiary';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/diary" element={<DiaryViewer />} />
-        <Route path="/create" element={<Create />} />
-        <Route path="/gps-create" element={<GpsCreate />} />
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Public */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+
+          {/* Role redirect */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/" element={<RoleRedirect />} />
+          </Route>
+
+          {/* Teacher routes */}
+          <Route element={<ProtectedRoute allowedRoles={['teacher']} />}>
+            <Route path="/teacher" element={<TeacherHome />} />
+            <Route path="/teacher/create" element={<TeacherCreate />} />
+            <Route path="/teacher/diary/:date" element={<TeacherDiary />} />
+          </Route>
+
+          {/* Student/Family routes */}
+          <Route element={<ProtectedRoute allowedRoles={['student', 'family']} />}>
+            <Route path="/student" element={<StudentHome />} />
+            <Route path="/student/diary/:date" element={<StudentDiary />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

@@ -2,6 +2,8 @@ import { Router } from 'express';
 import multer from 'multer';
 import { join } from 'path';
 import type { ApiError } from '../../../shared/src/types/api';
+import { authenticate, requireRole } from '../middleware/auth';
+import { getCurriculum, saveCurriculum } from '../db';
 import { parseScheduleImage } from '../services/llm';
 
 const uploadDir = join(__dirname, '..', '..', 'uploads');
@@ -27,9 +29,37 @@ const upload = multer({
   },
 });
 
-export const scheduleRouter = Router();
+export const curriculumRouter = Router();
 
-scheduleRouter.post('/parse', upload.single('schedule'), async (req, res) => {
+// Get teacher's curriculum
+curriculumRouter.get('/', authenticate, requireRole('teacher'), (req, res) => {
+  const entries = getCurriculum(req.user!.id);
+  res.json({ entries: entries || [] });
+});
+
+// Save/update curriculum
+curriculumRouter.put('/', authenticate, requireRole('teacher'), (req, res) => {
+  try {
+    const { entries } = req.body;
+    if (!Array.isArray(entries)) {
+      const error: ApiError = { error: 'entries must be an array', code: 400 };
+      res.status(400).json(error);
+      return;
+    }
+    saveCurriculum(req.user!.id, entries);
+    res.json({ entries });
+  } catch (err) {
+    const error: ApiError = {
+      error: 'Failed to save curriculum',
+      code: 500,
+      details: err instanceof Error ? err.message : String(err),
+    };
+    res.status(500).json(error);
+  }
+});
+
+// Parse schedule image and save
+curriculumRouter.post('/parse', authenticate, requireRole('teacher'), upload.single('schedule'), async (req, res) => {
   try {
     const file = req.file;
     if (!file) {
@@ -39,6 +69,7 @@ scheduleRouter.post('/parse', upload.single('schedule'), async (req, res) => {
     }
 
     const result = await parseScheduleImage(file.path);
+    saveCurriculum(req.user!.id, result.entries as any);
     res.json(result);
   } catch (err) {
     const error: ApiError = {

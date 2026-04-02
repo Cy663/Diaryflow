@@ -1,13 +1,16 @@
 import { Router } from 'express';
-import type { GenerateDiaryRequest, GenerateDiaryResponse, GenerateFromPhotosRequest, GenerateFromGpsRequest } from '../../../shared/src/types/diary';
+import type { GenerateUnifiedRequest, GenerateDiaryResponse } from '../../../shared/src/types/diary';
 import type { ApiError } from '../../../shared/src/types/api';
-import { generateDiary, generateDiaryFromPhotos, generateDiaryFromGps } from '../services/diary-generator';
+import { generateDiaryUnified } from '../services/diary-generator';
+import { authenticate, requireRole } from '../middleware/auth';
+import { saveDiary, getDiary, listDiaries } from '../db';
 
 export const diaryRouter = Router();
 
-diaryRouter.post('/generate', async (req, res) => {
+// Generate diary (teacher only) — saves to DB
+diaryRouter.post('/generate-unified', authenticate, requireRole('teacher'), async (req, res) => {
   try {
-    const { date, childName = 'Alex' } = req.body as GenerateDiaryRequest;
+    const { date, gpsPoints = [], photos = [], curriculum } = req.body as GenerateUnifiedRequest;
 
     if (!date) {
       const error: ApiError = { error: 'date is required', code: 400 };
@@ -15,7 +18,17 @@ diaryRouter.post('/generate', async (req, res) => {
       return;
     }
 
-    const diary = await generateDiary(date, childName);
+    if (gpsPoints.length === 0 && photos.length === 0) {
+      const error: ApiError = { error: 'At least GPS data or photos must be provided', code: 400 };
+      res.status(400).json(error);
+      return;
+    }
+
+    const diary = await generateDiaryUnified(date, gpsPoints, photos, curriculum);
+
+    // Persist diary
+    saveDiary(req.user!.id, date, JSON.stringify(diary));
+
     const response: GenerateDiaryResponse = { diary };
     res.json(response);
   } catch (err) {
@@ -28,60 +41,30 @@ diaryRouter.post('/generate', async (req, res) => {
   }
 });
 
-diaryRouter.post('/generate-from-photos', async (req, res) => {
-  try {
-    const { childName = 'Alex', date, photos, schedule } = req.body as GenerateFromPhotosRequest;
-
-    if (!date) {
-      const error: ApiError = { error: 'date is required', code: 400 };
-      res.status(400).json(error);
-      return;
-    }
-
-    if (!photos || photos.length === 0) {
-      const error: ApiError = { error: 'photos are required', code: 400 };
-      res.status(400).json(error);
-      return;
-    }
-
-    const diary = await generateDiaryFromPhotos(date, childName, photos, schedule);
-    const response: GenerateDiaryResponse = { diary };
-    res.json(response);
-  } catch (err) {
-    const error: ApiError = {
-      error: 'Failed to generate diary from photos',
-      code: 500,
-      details: err instanceof Error ? err.message : String(err),
-    };
-    res.status(500).json(error);
+// List all diaries — teachers see own, students/families see teacher's
+diaryRouter.get('/list', authenticate, (req, res) => {
+  const teacherId = req.user!.role === 'teacher' ? req.user!.id : req.user!.teacherId;
+  if (!teacherId) {
+    res.status(400).json({ error: 'No teacher associated', code: 400 });
+    return;
   }
+  const diaries = listDiaries(teacherId);
+  res.json({ diaries });
 });
 
-diaryRouter.post('/generate-from-gps', async (req, res) => {
-  try {
-    const { childName = 'Alex', date, gpsPoints } = req.body as GenerateFromGpsRequest;
-
-    if (!date) {
-      const error: ApiError = { error: 'date is required', code: 400 };
-      res.status(400).json(error);
-      return;
-    }
-
-    if (!gpsPoints || gpsPoints.length === 0) {
-      const error: ApiError = { error: 'gpsPoints are required', code: 400 };
-      res.status(400).json(error);
-      return;
-    }
-
-    const diary = await generateDiaryFromGps(date, childName, gpsPoints);
-    const response: GenerateDiaryResponse = { diary };
-    res.json(response);
-  } catch (err) {
-    const error: ApiError = {
-      error: 'Failed to generate diary from GPS',
-      code: 500,
-      details: err instanceof Error ? err.message : String(err),
-    };
-    res.status(500).json(error);
+// Get diary by date — teachers see own, students/families see teacher's
+diaryRouter.get('/:date', authenticate, (req, res) => {
+  const teacherId = req.user!.role === 'teacher' ? req.user!.id : req.user!.teacherId;
+  if (!teacherId) {
+    res.status(400).json({ error: 'No teacher associated', code: 400 });
+    return;
   }
+
+  const diaryJson = getDiary(teacherId, req.params.date);
+  if (!diaryJson) {
+    res.status(404).json({ error: 'No diary found for this date', code: 404 });
+    return;
+  }
+
+  res.json({ diary: JSON.parse(diaryJson) });
 });

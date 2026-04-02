@@ -1,4 +1,5 @@
-import { User } from './user';
+import { User, UserRole } from './user';
+import { ScheduleEntry } from './diary';
 
 export interface ApiError {
   error: string;
@@ -15,6 +16,8 @@ export interface AuthRegisterRequest {
   email: string;
   password: string;
   name: string;
+  role: UserRole;
+  teacherEmail?: string;
 }
 
 export interface AuthLoginRequest {
@@ -29,4 +32,18 @@ export interface AuthResponse {
 
 export interface AuthMeResponse {
   user: User;
+}
+
+export interface DiaryListItem {
+  id: string;
+  date: string;
+  createdAt: string;
+}
+
+export interface DiaryListResponse {
+  diaries: DiaryListItem[];
+}
+
+export interface CurriculumResponse {
+  entries: ScheduleEntry[];
 }

@@ -6,6 +6,7 @@ export interface GpsPoint {
 }
 
 export interface ScheduleEntry {
+  day: string;
   startTime: string;
   endTime: string;
   activity: string;
@@ -16,6 +17,7 @@ export interface ScheduleEntry {
 export interface DiaryPage {
   pageNumber: number;
   imageUrl: string;
+  placesImageUrl?: string;
   illustrationUrl: string;
   text: string;
   timeRange: string;
@@ -23,32 +25,19 @@ export interface DiaryPage {
 }
 
 export interface Diary {
-  childName: string;
   date: string;
   pages: DiaryPage[];
   gpsTrace: GpsPoint[];
-}
-
-export interface GenerateDiaryRequest {
-  date: string;
-  childName?: string;
 }
 
 export interface GenerateDiaryResponse {
   diary: Diary;
 }
 
-export interface UploadedPhoto {
+export interface PhotoWithTimestamp {
   url: string;
-  label: string;
-  time: string;
-}
-
-export interface GenerateFromPhotosRequest {
-  childName: string;
-  date: string;
-  photos: UploadedPhoto[];
-  schedule?: ScheduleEntry[];
+  timestamp: string;
+  label?: string;
 }
 
 export interface GpsInputPoint {
@@ -67,8 +56,9 @@ export interface StayCluster {
   photoRef?: string;
 }
 
-export interface GenerateFromGpsRequest {
-  childName?: string;
+export interface GenerateUnifiedRequest {
   date: string;
   gpsPoints: GpsInputPoint[];
+  photos: PhotoWithTimestamp[];
+  curriculum?: ScheduleEntry[];
 }
