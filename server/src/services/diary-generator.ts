@@ -25,7 +25,8 @@ function activityPrefix(placeTypes: string[]): string {
   const joined = placeTypes.join(' ').toLowerCase();
   if (/restaurant|food|cafe|bakery|meal/.test(joined)) return 'Lunch at';
   if (/school|university|education|library/.test(joined)) return 'Class at';
-  if (/park|playground|amusement/.test(joined)) return 'Playing at';
+  if (/playground/.test(joined)) return 'Freeplay at';
+  if (/park|amusement/.test(joined)) return 'Playing at';
   if (/transit|bus_station|train_station|subway/.test(joined)) return 'Transit at';
   return 'Visiting';
 }

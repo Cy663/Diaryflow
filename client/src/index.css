@@ -1,1 +1,16 @@
 @import "tailwindcss";
+
+/* Leaflet mini-map label overrides */
+.minimap-label {
+  background: rgba(254, 243, 199, 0.9) !important;
+  border: 1px solid #d97706 !important;
+  border-radius: 0.5rem !important;
+  color: #92400e !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  padding: 1px 6px !important;
+  box-shadow: none !important;
+}
+.minimap-label::before {
+  border-top-color: #d97706 !important;
+}

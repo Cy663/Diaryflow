@@ -29,10 +29,10 @@ const PRESET_KILLARNEY: GpsInputPoint[] = [
   { timestamp: '2026-03-27T13:50:00', lat: 49.2275, lng: -123.0473 },
   { timestamp: '2026-03-27T14:10:00', lat: 49.2275, lng: -123.0473 },
   { timestamp: '2026-03-27T14:30:00', lat: 49.2275, lng: -123.0473 },
-  { timestamp: '2026-03-27T14:35:00', lat: 49.2265, lng: -123.0460 },
-  { timestamp: '2026-03-27T14:45:00', lat: 49.2253, lng: -123.0449 },
-  { timestamp: '2026-03-27T15:00:00', lat: 49.2253, lng: -123.0449 },
-  { timestamp: '2026-03-27T15:15:00', lat: 49.2253, lng: -123.0449 },
+  { timestamp: '2026-03-27T14:35:00', lat: 49.2270, lng: -123.0430 },
+  { timestamp: '2026-03-27T14:45:00', lat: 49.2268, lng: -123.0370 },
+  { timestamp: '2026-03-27T15:00:00', lat: 49.2268, lng: -123.0370 },
+  { timestamp: '2026-03-27T15:15:00', lat: 49.2268, lng: -123.0370 },
 ];
 
 const PRESETS: Record<string, GpsInputPoint[]> = {

@@ -18,7 +18,7 @@ function DiaryDisplay({ diary }: Props) {
     <div className="bg-white rounded-3xl shadow-xl max-w-3xl w-full overflow-hidden">
       {/* Mini-map */}
       {hasGps && (
-        <div className="bg-amber-50 border-b border-amber-100 px-4 pt-3 pb-1 h-[160px]">
+        <div className="bg-amber-50 border-b border-amber-100 px-4 pt-3 pb-1 h-[200px]">
           <MiniMap
             gpsTrace={diary.gpsTrace}
             currentPageIndex={currentPage}
