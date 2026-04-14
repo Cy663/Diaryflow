@@ -164,6 +164,9 @@ Extract ALL classes/activities for ALL days of the week. For each one provide:
 - endTime: HH:MM (24h)
 - location: if visible, otherwise empty string
 
+If the schedule is a single daily schedule without day names, use "Everyday" as the day.
+If only start times are listed, estimate end times based on the next activity's start time.
+
 Return ONLY valid JSON array, no markdown fences:
 [{"day":"Monday","activity":"...","startTime":"HH:MM","endTime":"HH:MM","location":"..."},...]
 
@@ -196,7 +199,8 @@ If you cannot parse it, return: []`;
     const jsonStr = raw.replace(/^```json?\n?/i, '').replace(/\n?```$/i, '').trim();
     const entries = JSON.parse(jsonStr);
     return { entries: Array.isArray(entries) ? entries : [] };
-  } catch {
+  } catch (err) {
+    console.error('[LLM] parseScheduleImage failed:', err);
     return { entries: [] };
   }
 }

@@ -57,7 +57,7 @@ export default function PageShell({
               <span className={`text-lg font-bold tracking-tight ${
                 isTeacher ? 'text-secondary-800' : 'text-primary-700'
               }`}>
-                DiaryFlow
+                FlowDiary
               </span>
             )}
             {title && (
