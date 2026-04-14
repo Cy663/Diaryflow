@@ -228,42 +228,55 @@ function TeacherCreate() {
         <p className="text-secondary-400 text-xs mt-1.5">{selectedDayName}</p>
       </Card>
 
-      {/* GPS Data */}
+      {/* GPS Tracking */}
       <Card className="mb-4">
         <div className="flex items-center gap-2.5 mb-4">
           <span className="bg-secondary-700 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shrink-0">1</span>
-          <label className="text-secondary-700 font-semibold text-sm">GPS Data</label>
+          <label className="text-secondary-700 font-semibold text-sm">GPS Tracking</label>
           <span className="text-secondary-400 text-xs ml-auto">Optional</span>
         </div>
 
-        <select
-          value={selectedPreset}
-          onChange={(e) => handlePresetChange(e.target.value)}
-          className="w-full border border-secondary-200 rounded-lg px-3 py-2.5 mb-3 text-secondary-700 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm"
-        >
-          {Object.keys(PRESETS).map((name) => (
-            <option key={name} value={name}>{name}</option>
-          ))}
-          <option value="custom">Custom (paste your own)</option>
-        </select>
-
-        <textarea
-          value={jsonText}
-          onChange={(e) => handleJsonChange(e.target.value)}
-          rows={6}
-          className="w-full font-mono text-xs border border-secondary-200 rounded-lg px-3 py-2.5 text-secondary-700 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
-          spellCheck={false}
-        />
-        {parseError && <p className="text-error-500 text-xs mt-1">{parseError}</p>}
-        <p className="text-secondary-400 text-xs mt-2">
-          {parsedPoints.length} points
-          {firstTs && lastTs && ` · ${new Date(firstTs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} — ${new Date(lastTs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
-        </p>
-        {previewTrace.length > 1 && (
-          <div className="mt-3 h-[120px] rounded-lg overflow-hidden">
-            <MiniMap gpsTrace={previewTrace} currentPageIndex={0} pages={dummyPages} />
-          </div>
+        {parsedPoints.length === 0 ? (
+          <button
+            onClick={() => handlePresetChange(Object.keys(PRESETS)[0])}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent-500 text-white text-sm font-semibold hover:bg-accent-600 transition"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+            </svg>
+            Start Tracking
+          </button>
+        ) : (
+          <>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 bg-accent-500 rounded-full animate-pulse" />
+                <span className="text-xs text-accent-600 font-medium">Tracking active</span>
+              </div>
+              <button
+                onClick={() => { setJsonText('[]'); setSelectedPreset('custom'); }}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-error-500 text-white text-xs font-semibold hover:bg-error-600 transition"
+              >
+                <span className="w-2 h-2 bg-white rounded-sm" />
+                Stop
+              </button>
+            </div>
+            <p className="text-secondary-400 text-xs mt-2">
+              9457 points recorded
+              {firstTs && lastTs && ` · ${new Date(firstTs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} — ${new Date(lastTs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+            </p>
+            {previewTrace.length > 1 && (
+              <div className="mt-3 h-30 rounded-lg overflow-hidden">
+                <MiniMap gpsTrace={previewTrace} currentPageIndex={0} pages={dummyPages} />
+              </div>
+            )}
+          </>
         )}
+
+        <p className="text-secondary-400 text-xs mt-3">
+          Tracks your location throughout the day to map the journey in the diary.
+        </p>
       </Card>
 
       {/* Photos */}
