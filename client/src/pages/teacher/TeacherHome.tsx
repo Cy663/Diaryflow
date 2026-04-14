@@ -169,6 +169,9 @@ function TeacherHome() {
               loadingText="Parsing curriculum..."
               onFiles={handleCurriculumUpload}
             />
+            <p className="text-xs text-secondary-400 mt-2 text-center">
+              Please do not upload schedules containing student names or personal information.
+            </p>
             {error && <ErrorAlert message={error} onDismiss={() => setError(null)} />}
           </>
         ) : (
