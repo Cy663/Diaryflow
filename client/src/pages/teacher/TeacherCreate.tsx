@@ -5,6 +5,12 @@ import { uploadPhotos, generateDiaryUnified } from '../../api/diary';
 import { getCurriculum } from '../../api/curriculum';
 import { extractTimestamp } from '../../utils/exif';
 import MiniMap from '../../components/MiniMap';
+import PageShell from '../../components/PageShell';
+import Card from '../../components/ui/Card';
+import Button from '../../components/ui/Button';
+import FileUploadZone from '../../components/ui/FileUploadZone';
+import ErrorAlert from '../../components/ui/ErrorAlert';
+import CurriculumEditor from '../../components/CurriculumEditor';
 
 // Killarney Secondary School area preset
 const PRESET_KILLARNEY: GpsInputPoint[] = [
@@ -39,11 +45,9 @@ const PRESETS: Record<string, GpsInputPoint[]> = {
   'Killarney Secondary — Vancouver': PRESET_KILLARNEY,
 };
 
-// Default school-day times for photos without EXIF data
 const DEFAULT_PHOTO_TIMES = ['08:30', '09:45', '11:00', '12:30', '14:00'];
 function getDefaultTime(index: number): string {
   if (index < DEFAULT_PHOTO_TIMES.length) return DEFAULT_PHOTO_TIMES[index];
-  // Beyond 5 photos, space by 1 hour starting from 15:00
   const h = 15 + (index - DEFAULT_PHOTO_TIMES.length);
   return `${String(Math.min(h, 17)).padStart(2, '0')}:00`;
 }
@@ -63,22 +67,13 @@ function TeacherCreate() {
   const navigate = useNavigate();
   const today = new Date().toISOString().split('T')[0];
 
-  // Date picker
   const [selectedDate, setSelectedDate] = useState(today);
-
-  // GPS state
   const [selectedPreset, setSelectedPreset] = useState<string>(Object.keys(PRESETS)[0]);
   const [jsonText, setJsonText] = useState(JSON.stringify(PRESETS[Object.keys(PRESETS)[0]], null, 2));
   const [parseError, setParseError] = useState<string | null>(null);
-
-  // Photo state
   const [photos, setPhotos] = useState<PhotoEntry[]>([]);
-
-  // Curriculum state — saved version from DB + editable local version for this generation
   const [savedCurriculum, setSavedCurriculum] = useState<ScheduleEntry[]>([]);
   const [editableCurriculum, setEditableCurriculum] = useState<ScheduleEntry[]>([]);
-
-  // UI state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -90,7 +85,6 @@ function TeacherCreate() {
       .catch(() => setSavedCurriculum([]));
   }, []);
 
-  // Reset editable curriculum when date or saved curriculum changes
   useEffect(() => {
     setEditableCurriculum(savedCurriculum.filter((e) => e.day === selectedDayName));
   }, [savedCurriculum, selectedDayName]);
@@ -111,13 +105,12 @@ function TeacherCreate() {
     setEditableCurriculum((prev) => [...prev, { day: selectedDayName, startTime: '', endTime: '', activity: '', location: '', imageKey: '' }]);
   };
 
-  // --- GPS ---
   let parsedPoints: GpsInputPoint[] = [];
   try {
     parsedPoints = JSON.parse(jsonText);
     if (!Array.isArray(parsedPoints)) parsedPoints = [];
   } catch {
-    // will show parse error
+    // parse error handled below
   }
 
   const handlePresetChange = (preset: string) => {
@@ -141,9 +134,7 @@ function TeacherCreate() {
     }
   };
 
-  // --- Photos ---
-  const handlePhotos = async (files: FileList | null) => {
-    if (!files) return;
+  const handlePhotos = async (files: File[]) => {
     const newEntries: PhotoEntry[] = [];
     const currentCount = photos.length;
     for (let i = 0; i < files.length; i++) {
@@ -153,7 +144,6 @@ function TeacherCreate() {
       if (exifTs) {
         timestamp = exifTs;
       } else {
-        // No EXIF — assign a default school-day time
         const defaultTime = getDefaultTime(currentCount + i);
         timestamp = `${selectedDate}T${defaultTime}:00`;
       }
@@ -173,7 +163,6 @@ function TeacherCreate() {
     setPhotos((prev) => prev.map((p, i) => i === index ? { ...p, timestamp: value } : p));
   };
 
-  // --- Generate ---
   const canGenerate = !loading && (parsedPoints.length > 0 || photos.length > 0) && !parseError;
 
   const handleGenerate = async () => {
@@ -209,7 +198,6 @@ function TeacherCreate() {
     }
   };
 
-  // MiniMap preview
   const previewTrace = parsedPoints.map((p) => ({
     timestamp: p.timestamp, lat: p.lat, lng: p.lng, label: '',
   }));
@@ -222,198 +210,146 @@ function TeacherCreate() {
   }] : [];
 
   return (
-    <div className="min-h-screen bg-amber-50 p-4 py-8">
-      <div className="max-w-2xl mx-auto">
-        <button
-          onClick={() => navigate('/teacher')}
-          className="text-amber-600 hover:text-amber-800 transition mb-4"
+    <PageShell variant="teacher" maxWidth="md" backTo="/teacher" backLabel="Dashboard" title="Create Diary">
+      <h1 className="text-2xl font-bold text-secondary-800 mb-1">Create a Diary</h1>
+      <p className="text-secondary-500 text-sm mb-6">
+        Select a date, add GPS data and/or photos, then generate.
+      </p>
+
+      {/* Date Picker */}
+      <Card className="mb-4">
+        <label className="text-secondary-700 font-medium text-sm block mb-2">Date</label>
+        <input
+          type="date"
+          value={selectedDate}
+          onChange={(e) => setSelectedDate(e.target.value)}
+          className="w-full border border-secondary-200 rounded-lg px-3 py-2.5 text-secondary-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm"
+        />
+        <p className="text-secondary-400 text-xs mt-1.5">{selectedDayName}</p>
+      </Card>
+
+      {/* GPS Data */}
+      <Card className="mb-4">
+        <div className="flex items-center gap-2.5 mb-4">
+          <span className="bg-secondary-700 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shrink-0">1</span>
+          <label className="text-secondary-700 font-semibold text-sm">GPS Data</label>
+          <span className="text-secondary-400 text-xs ml-auto">Optional</span>
+        </div>
+
+        <select
+          value={selectedPreset}
+          onChange={(e) => handlePresetChange(e.target.value)}
+          className="w-full border border-secondary-200 rounded-lg px-3 py-2.5 mb-3 text-secondary-700 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm"
         >
-          &larr; Back to Dashboard
-        </button>
+          {Object.keys(PRESETS).map((name) => (
+            <option key={name} value={name}>{name}</option>
+          ))}
+          <option value="custom">Custom (paste your own)</option>
+        </select>
 
-        <h1 className="text-3xl font-bold text-amber-800 mb-2">Create a Diary</h1>
-        <p className="text-amber-600 mb-6">
-          Select a date, add GPS data and/or photos, then generate.
+        <textarea
+          value={jsonText}
+          onChange={(e) => handleJsonChange(e.target.value)}
+          rows={6}
+          className="w-full font-mono text-xs border border-secondary-200 rounded-lg px-3 py-2.5 text-secondary-700 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+          spellCheck={false}
+        />
+        {parseError && <p className="text-error-500 text-xs mt-1">{parseError}</p>}
+        <p className="text-secondary-400 text-xs mt-2">
+          {parsedPoints.length} points
+          {firstTs && lastTs && ` · ${new Date(firstTs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} — ${new Date(lastTs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
         </p>
+        {previewTrace.length > 1 && (
+          <div className="mt-3 h-[120px] rounded-lg overflow-hidden">
+            <MiniMap gpsTrace={previewTrace} currentPageIndex={0} pages={dummyPages} />
+          </div>
+        )}
+      </Card>
 
-        {/* Date Picker */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-4">
-          <label className="text-amber-700 font-medium block mb-2">Date</label>
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="w-full border border-amber-300 rounded-lg px-3 py-2 text-amber-800 focus:outline-none focus:ring-2 focus:ring-amber-400"
-          />
-          <p className="text-amber-500 text-sm mt-1">{selectedDayName}</p>
+      {/* Photos */}
+      <Card className="mb-4">
+        <div className="flex items-center gap-2.5 mb-4">
+          <span className="bg-secondary-700 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shrink-0">2</span>
+          <label className="text-secondary-700 font-semibold text-sm">Photos</label>
+          <span className="text-secondary-400 text-xs ml-auto">Optional</span>
         </div>
 
-        {/* GPS Data */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-4">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="bg-amber-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">1</span>
-            <label className="text-amber-700 font-medium">GPS Data</label>
-            <span className="text-amber-400 text-xs ml-auto">Optional</span>
-          </div>
+        <FileUploadZone
+          accept="image/*"
+          multiple
+          label="Click to upload photos"
+          helperText="iPhone photos — timestamps extracted from EXIF"
+          onFiles={handlePhotos}
+        />
 
-          <select
-            value={selectedPreset}
-            onChange={(e) => handlePresetChange(e.target.value)}
-            className="w-full border border-amber-300 rounded-lg px-3 py-2 mb-3 text-amber-800 focus:outline-none focus:ring-2 focus:ring-amber-400"
-          >
-            {Object.keys(PRESETS).map((name) => (
-              <option key={name} value={name}>{name}</option>
+        {photos.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-4">
+            {photos.map((photo, i) => (
+              <div key={i} className="relative group">
+                <img src={photo.preview} alt={`Photo ${i + 1}`} className="w-full h-28 object-cover rounded-lg" />
+                <button
+                  onClick={() => removePhoto(i)}
+                  className="absolute top-1 right-1 bg-black/60 text-white w-5 h-5 rounded-full text-xs opacity-0 group-hover:opacity-100 transition flex items-center justify-center"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+                <input
+                  type="time"
+                  value={photo.timestamp ? isoToTimeValue(photo.timestamp) : ''}
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      updatePhotoTimestamp(i, `${selectedDate}T${e.target.value}:00`);
+                    }
+                  }}
+                  className="w-full text-center text-xs text-secondary-600 bg-secondary-50 rounded-b-lg px-1 py-1 border border-secondary-200 focus:outline-none focus:border-primary-500 mt-1"
+                />
+              </div>
             ))}
-            <option value="custom">Custom (paste your own)</option>
-          </select>
+          </div>
+        )}
+      </Card>
 
-          <textarea
-            value={jsonText}
-            onChange={(e) => handleJsonChange(e.target.value)}
-            rows={6}
-            className="w-full font-mono text-xs border border-amber-300 rounded-lg px-3 py-2 text-amber-800 focus:outline-none focus:ring-2 focus:ring-amber-400"
-            spellCheck={false}
-          />
-          {parseError && <p className="text-red-500 text-sm mt-1">{parseError}</p>}
-          <p className="text-amber-500 text-sm mt-2">
-            {parsedPoints.length} points
-            {firstTs && lastTs && ` · ${new Date(firstTs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} — ${new Date(lastTs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
-          </p>
-          {previewTrace.length > 1 && (
-            <div className="mt-3 h-[120px]">
-              <MiniMap gpsTrace={previewTrace} currentPageIndex={0} pages={dummyPages} />
-            </div>
-          )}
+      {/* Curriculum */}
+      <Card className="mb-6">
+        <div className="flex items-center gap-2.5 mb-4">
+          <span className="bg-secondary-700 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shrink-0">3</span>
+          <label className="text-secondary-700 font-semibold text-sm">Schedule for {selectedDayName}</label>
+          <span className="text-secondary-400 text-xs ml-auto">Editable for this diary</span>
         </div>
 
-        {/* Photos */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-4">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="bg-amber-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">2</span>
-            <label className="text-amber-700 font-medium">Photos</label>
-            <span className="text-amber-400 text-xs ml-auto">Optional</span>
-          </div>
+        <CurriculumEditor
+          entries={editableCurriculum}
+          onUpdate={updateCurriculumEntry}
+          onRemove={removeCurriculumEntry}
+          onAdd={addCurriculumEntry}
+          onReset={resetCurriculum}
+          emptyMessage={`No classes for ${selectedDayName}`}
+        />
+        <p className="text-secondary-300 text-xs mt-3">Changes here are for this diary only — they won't update your saved curriculum</p>
+      </Card>
 
-          <label className="block border-2 border-dashed border-amber-300 rounded-xl p-6 text-center cursor-pointer hover:border-amber-400 hover:bg-amber-50 transition mb-3">
-            <input type="file" multiple accept="image/*" onChange={(e) => handlePhotos(e.target.files)} className="hidden" />
-            <p className="text-amber-600 font-medium">Click to upload photos</p>
-            <p className="text-amber-400 text-sm mt-1">iPhone photos — timestamps extracted from EXIF</p>
-          </label>
-
-          {photos.length > 0 && (
-            <div className="grid grid-cols-4 gap-3">
-              {photos.map((photo, i) => (
-                <div key={i} className="relative group">
-                  <img src={photo.preview} alt={`Photo ${i + 1}`} className="w-full h-24 object-cover rounded-lg" />
-                  <button
-                    onClick={() => removePhoto(i)}
-                    className="absolute top-0 right-0 bg-black/50 text-white w-5 h-5 rounded-bl-lg text-xs opacity-0 group-hover:opacity-100 transition"
-                  >
-                    &times;
-                  </button>
-                  <input
-                    type="time"
-                    value={photo.timestamp ? isoToTimeValue(photo.timestamp) : ''}
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        updatePhotoTimestamp(i, `${selectedDate}T${e.target.value}:00`);
-                      }
-                    }}
-                    className="w-full text-center text-xs text-amber-600 bg-amber-50 rounded-b-lg px-1 py-0.5 border border-amber-200 focus:outline-none focus:border-amber-400 mt-1"
-                  />
-                </div>
-              ))}
-            </div>
-          )}
+      {/* Error */}
+      {error && (
+        <div className="mb-4">
+          <ErrorAlert message={error} onDismiss={() => setError(null)} />
         </div>
+      )}
 
-        {/* Curriculum (editable for this generation only) */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-4">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="bg-amber-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">3</span>
-            <label className="text-amber-700 font-medium">Schedule for {selectedDayName}</label>
-            <span className="text-amber-400 text-xs ml-auto">Editable for this diary</span>
-          </div>
-
-          {editableCurriculum.length > 0 ? (
-            <div className="space-y-2 mb-3">
-              {editableCurriculum.map((entry, i) => (
-                <div key={i} className="flex gap-2 items-center bg-amber-50 rounded-lg p-2 text-sm">
-                  <input
-                    value={entry.startTime}
-                    onChange={(e) => updateCurriculumEntry(i, 'startTime', e.target.value)}
-                    className="w-16 px-2 py-1 rounded border border-amber-200 focus:border-amber-400 focus:outline-none text-center"
-                    placeholder="09:00"
-                  />
-                  <span className="text-amber-400">-</span>
-                  <input
-                    value={entry.endTime}
-                    onChange={(e) => updateCurriculumEntry(i, 'endTime', e.target.value)}
-                    className="w-16 px-2 py-1 rounded border border-amber-200 focus:border-amber-400 focus:outline-none text-center"
-                    placeholder="10:00"
-                  />
-                  <input
-                    value={entry.activity}
-                    onChange={(e) => updateCurriculumEntry(i, 'activity', e.target.value)}
-                    className="flex-1 px-2 py-1 rounded border border-amber-200 focus:border-amber-400 focus:outline-none"
-                    placeholder="Activity"
-                  />
-                  <input
-                    value={entry.location}
-                    onChange={(e) => updateCurriculumEntry(i, 'location', e.target.value)}
-                    className="w-24 px-2 py-1 rounded border border-amber-200 focus:border-amber-400 focus:outline-none"
-                    placeholder="Location"
-                  />
-                  <button
-                    onClick={() => removeCurriculumEntry(i)}
-                    className="text-amber-400 hover:text-red-500"
-                  >
-                    &times;
-                  </button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-amber-400 text-sm mb-3">No classes for {selectedDayName}</p>
-          )}
-
-          <div className="flex gap-3">
-            <button
-              onClick={addCurriculumEntry}
-              className="text-amber-500 hover:text-amber-700 text-sm transition"
-            >
-              + Add entry
-            </button>
-            <button
-              onClick={resetCurriculum}
-              className="text-amber-400 hover:text-amber-600 text-sm transition"
-            >
-              Reset to saved
-            </button>
-          </div>
-          <p className="text-amber-300 text-xs mt-2">Changes here are for this diary only — they won't update your saved curriculum</p>
-        </div>
-
-        {/* Error */}
-        {error && <div className="bg-red-50 text-red-600 rounded-xl p-4 mb-4">{error}</div>}
-
-        {/* Generate */}
-        <button
+      {/* Generate */}
+      <div className="sticky bottom-4 z-20">
+        <Button
           onClick={handleGenerate}
           disabled={!canGenerate}
-          className="w-full bg-amber-500 hover:bg-amber-600 text-white text-xl font-semibold py-4 rounded-xl transition shadow-md hover:shadow-lg disabled:opacity-50 disabled:hover:bg-amber-500"
+          loading={loading}
+          size="lg"
+          className="w-full shadow-lg"
         >
-          {loading ? (
-            <span className="flex items-center justify-center gap-2">
-              <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Generating Diary...
-            </span>
-          ) : (
-            `Generate Diary for ${selectedDate}`
-          )}
-        </button>
+          {loading ? 'Generating Diary...' : `Generate Diary for ${selectedDate}`}
+        </Button>
       </div>
-    </div>
+    </PageShell>
   );
 }
 

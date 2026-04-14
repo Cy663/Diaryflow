@@ -54,6 +54,17 @@ export interface StayCluster {
   placeName?: string;
   placeTypes?: string[];
   photoRef?: string;
+  placeSource?: 'preset' | 'google-places' | 'fallback';
+}
+
+export interface PresetLocation {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  radiusM: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface GenerateUnifiedRequest {

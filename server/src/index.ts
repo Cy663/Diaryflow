@@ -23,6 +23,7 @@ import { diaryRouter } from './routes/diary';
 import { photosRouter } from './routes/photos';
 import { placesRouter } from './routes/places';
 import { curriculumRouter } from './routes/curriculum';
+import { presetLocationsRouter } from './routes/preset-locations';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -37,6 +38,7 @@ app.use('/api/diary', diaryRouter);
 app.use('/api/photos', photosRouter);
 app.use('/api/places', placesRouter);
 app.use('/api/curriculum', curriculumRouter);
+app.use('/api/preset-locations', presetLocationsRouter);
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

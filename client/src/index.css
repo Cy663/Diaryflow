@@ -1,5 +1,67 @@
 @import "tailwindcss";
 
+@theme {
+  /* Primary — warm amber, brand continuity */
+  --color-primary-50: #FFFBEB;
+  --color-primary-100: #FEF3C7;
+  --color-primary-200: #FDE68A;
+  --color-primary-300: #FCD34D;
+  --color-primary-400: #FBBF24;
+  --color-primary-500: #F59E0B;
+  --color-primary-600: #D97706;
+  --color-primary-700: #B45309;
+  --color-primary-800: #92400E;
+  --color-primary-900: #78350F;
+
+  /* Secondary — slate, professional dashboard */
+  --color-secondary-50: #F8FAFC;
+  --color-secondary-100: #F1F5F9;
+  --color-secondary-200: #E2E8F0;
+  --color-secondary-300: #CBD5E1;
+  --color-secondary-400: #94A3B8;
+  --color-secondary-500: #64748B;
+  --color-secondary-600: #475569;
+  --color-secondary-700: #334155;
+  --color-secondary-800: #1E293B;
+  --color-secondary-900: #0F172A;
+
+  /* Accent — teal for interactive elements */
+  --color-accent-50: #F0FDFA;
+  --color-accent-100: #CCFBF1;
+  --color-accent-400: #2DD4BF;
+  --color-accent-500: #14B8A6;
+  --color-accent-600: #0D9488;
+
+  /* Diary-specific warm palette */
+  --color-diary-bg: #FFF7ED;
+  --color-diary-page: #FFFBF0;
+  --color-diary-border: #FED7AA;
+  --color-diary-text: #44403C;
+
+  /* Semantic */
+  --color-success-50: #F0FDF4;
+  --color-success-500: #22C55E;
+  --color-success-600: #16A34A;
+  --color-error-50: #FEF2F2;
+  --color-error-500: #EF4444;
+  --color-error-600: #DC2626;
+  --color-warning-50: #FFFBEB;
+  --color-warning-500: #F59E0B;
+
+  /* Font families */
+  --font-diary: "Nunito", system-ui, sans-serif;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-diary: 0 4px 24px rgba(120, 53, 15, 0.1);
+}
+
+/* Diary display font */
+.font-diary {
+  font-family: var(--font-diary);
+}
+
 /* Leaflet mini-map label overrides */
 .minimap-label {
   background: rgba(254, 243, 199, 0.9) !important;
@@ -13,4 +75,43 @@
 }
 .minimap-label::before {
   border-top-color: #d97706 !important;
+}
+
+/* Page transition animations */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.animate-slide-in-right {
+  animation: slide-in-right 0.25s ease-out;
+}
+
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.animate-slide-in-left {
+  animation: slide-in-left 0.25s ease-out;
+}
+
+/* Polaroid photo effect for diary */
+.diary-photo {
+  background: white;
+  padding: 6px 6px 24px 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  border-radius: 2px;
+}
+.diary-photo-tilt-left {
+  transform: rotate(-1.5deg);
+}
+.diary-photo-tilt-right {
+  transform: rotate(1.5deg);
 }

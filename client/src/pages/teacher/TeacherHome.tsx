@@ -1,14 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { ScheduleEntry } from 'shared/types/diary';
+import type { ScheduleEntry, PresetLocation } from 'shared/types/diary';
 import { getCurriculum, saveCurriculumApi, parseCurriculumImage } from '../../api/curriculum';
-import { useAuth } from '../../contexts/AuthContext';
+import { getPresetLocations, createPresetLocation, deletePresetLocation } from '../../api/preset-locations';
+import PageShell from '../../components/PageShell';
+import Card from '../../components/ui/Card';
+import Button from '../../components/ui/Button';
+import Input from '../../components/ui/Input';
+import FileUploadZone from '../../components/ui/FileUploadZone';
+import ErrorAlert from '../../components/ui/ErrorAlert';
+import CurriculumEditor from '../../components/CurriculumEditor';
+import LocationPicker from '../../components/LocationPicker';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
 function TeacherHome() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
   const [curriculum, setCurriculum] = useState<ScheduleEntry[] | null>(null);
   const [loadingCurr, setLoadingCurr] = useState(true);
   const [parsing, setParsing] = useState(false);
@@ -25,7 +32,8 @@ function TeacherHome() {
       .finally(() => setLoadingCurr(false));
   }, []);
 
-  const handleCurriculumUpload = async (file: File | undefined) => {
+  const handleCurriculumUpload = async (files: File[]) => {
+    const file = files[0];
     if (!file) return;
     setParsing(true);
     setError(null);
@@ -50,16 +58,63 @@ function TeacherHome() {
 
   const updateEntry = async (index: number, field: keyof ScheduleEntry, value: string) => {
     if (!curriculum) return;
-    const updated = curriculum.map((e, i) => (i === index ? { ...e, [field]: value } : e));
+    const globalIndex = entriesForDay.length > 0
+      ? curriculum.indexOf(entriesForDay[index])
+      : index;
+    const updated = curriculum.map((e, i) => (i === globalIndex ? { ...e, [field]: value } : e));
     setCurriculum(updated);
     await saveCurriculumApi(updated).catch(() => {});
   };
 
   const removeEntry = async (index: number) => {
     if (!curriculum) return;
-    const updated = curriculum.filter((_, i) => i !== index);
+    const globalIndex = curriculum.indexOf(entriesForDay[index]);
+    const updated = curriculum.filter((_, i) => i !== globalIndex);
     setCurriculum(updated);
     await saveCurriculumApi(updated).catch(() => {});
+  };
+
+  // --- Preset Locations ---
+  const [presets, setPresets] = useState<PresetLocation[]>([]);
+  const [showAddPreset, setShowAddPreset] = useState(false);
+  const [newPresetName, setNewPresetName] = useState('');
+  const [newPresetLat, setNewPresetLat] = useState<number | undefined>();
+  const [newPresetLng, setNewPresetLng] = useState<number | undefined>();
+  const [newPresetRadius, setNewPresetRadius] = useState(50);
+  const [presetLoading, setPresetLoading] = useState(false);
+
+  useEffect(() => {
+    getPresetLocations()
+      .then(setPresets)
+      .catch(() => setPresets([]));
+  }, []);
+
+  const handleAddPreset = async () => {
+    if (!newPresetName || newPresetLat === undefined || newPresetLng === undefined) return;
+    setPresetLoading(true);
+    try {
+      const created = await createPresetLocation({
+        name: newPresetName,
+        lat: newPresetLat,
+        lng: newPresetLng,
+        radiusM: newPresetRadius,
+      });
+      setPresets((prev) => [...prev, created]);
+      setNewPresetName('');
+      setNewPresetLat(undefined);
+      setNewPresetLng(undefined);
+      setNewPresetRadius(50);
+      setShowAddPreset(false);
+    } catch {
+      // handled silently
+    } finally {
+      setPresetLoading(false);
+    }
+  };
+
+  const handleDeletePreset = async (id: string) => {
+    await deletePresetLocation(id).catch(() => {});
+    setPresets((prev) => prev.filter((p) => p.id !== id));
   };
 
   const entriesForDay = curriculum?.filter((e) => e.day === activeDay) || [];
@@ -68,174 +123,221 @@ function TeacherHome() {
     : [];
 
   return (
-    <div className="min-h-screen bg-amber-50 flex items-center justify-center p-4">
-      <div className="text-center max-w-lg w-full">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-4xl font-bold text-amber-800">DiaryFlow</h1>
-            <p className="text-amber-600 text-sm">Teacher: {user?.name}</p>
-          </div>
-          <button
-            onClick={logout}
-            className="text-amber-500 hover:text-amber-700 text-sm transition"
-          >
-            Sign out
-          </button>
-        </div>
-
-        {/* Curriculum Section */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-4 text-left">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-amber-700 font-semibold text-lg">Curriculum</h2>
+    <PageShell variant="teacher" maxWidth="md">
+      {/* Curriculum Section */}
+      <Card
+        className="mb-5"
+        header={
+          <div className="flex items-center justify-between">
+            <h2 className="text-secondary-800 font-semibold">Curriculum</h2>
             {curriculum && (
-              <div className="flex gap-2">
-                <label className="text-amber-500 hover:text-amber-700 text-sm cursor-pointer transition">
+              <div className="flex gap-3">
+                <label className="text-sm text-primary-500 hover:text-primary-700 cursor-pointer transition font-medium">
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={(e) => handleCurriculumUpload(e.target.files?.[0])}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) handleCurriculumUpload([f]);
+                    }}
                     className="hidden"
                   />
                   Re-upload
                 </label>
                 <button
                   onClick={handleClear}
-                  className="text-amber-400 hover:text-red-500 text-sm transition"
+                  className="text-sm text-secondary-400 hover:text-error-500 transition"
                 >
                   Clear
                 </button>
               </div>
             )}
           </div>
-
-          {loadingCurr ? (
-            <div className="flex items-center justify-center py-6">
-              <div className="animate-spin rounded-full h-6 w-6 border-2 border-amber-300 border-t-amber-600"></div>
+        }
+      >
+        {loadingCurr ? (
+          <div className="flex items-center justify-center py-6">
+            <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary-200 border-t-primary-600" />
+          </div>
+        ) : !curriculum ? (
+          <>
+            <FileUploadZone
+              accept="image/*"
+              label="Upload school schedule"
+              helperText="Take a photo of the weekly timetable — AI will extract all days"
+              loading={parsing}
+              loadingText="Parsing curriculum..."
+              onFiles={handleCurriculumUpload}
+            />
+            {error && <ErrorAlert message={error} onDismiss={() => setError(null)} />}
+          </>
+        ) : (
+          <div>
+            {/* Day tabs */}
+            <div className="flex gap-1 mb-4">
+              {(daysWithEntries.length > 0 ? daysWithEntries : DAYS).map((day) => {
+                const count = curriculum.filter((e) => e.day === day).length;
+                return (
+                  <button
+                    key={day}
+                    onClick={() => setActiveDay(day)}
+                    className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition ${
+                      activeDay === day
+                        ? 'bg-secondary-700 text-white'
+                        : 'bg-secondary-50 text-secondary-500 hover:bg-secondary-100'
+                    }`}
+                  >
+                    {day.slice(0, 3)}
+                    {count > 0 && (
+                      <span className={`ml-1 text-xs ${activeDay === day ? 'text-secondary-300' : 'text-secondary-400'}`}>
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
-          ) : !curriculum ? (
-            <>
-              <label className="block border-2 border-dashed border-amber-300 rounded-xl p-6 text-center cursor-pointer hover:border-amber-400 hover:bg-amber-50 transition">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleCurriculumUpload(e.target.files?.[0])}
-                  className="hidden"
-                />
-                {parsing ? (
-                  <div className="flex items-center justify-center gap-2 text-amber-600">
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-amber-300 border-t-amber-600"></div>
-                    <span className="text-sm">Parsing curriculum...</span>
-                  </div>
-                ) : (
-                  <>
-                    <p className="text-amber-600 font-medium">Upload school schedule</p>
-                    <p className="text-amber-400 text-sm mt-1">
-                      Take a photo of the weekly timetable — AI will extract all days
-                    </p>
-                  </>
-                )}
-              </label>
-              {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-            </>
-          ) : (
-            <div>
-              {/* Day tabs */}
-              <div className="flex gap-1 mb-3">
-                {(daysWithEntries.length > 0 ? daysWithEntries : DAYS).map((day) => {
-                  const count = curriculum.filter((e) => e.day === day).length;
-                  return (
-                    <button
-                      key={day}
-                      onClick={() => setActiveDay(day)}
-                      className={`flex-1 px-3 py-1.5 rounded-lg text-sm font-medium transition ${
-                        activeDay === day
-                          ? 'bg-amber-500 text-white'
-                          : 'bg-amber-50 text-amber-600 hover:bg-amber-100'
-                      }`}
-                    >
-                      {day.slice(0, 3)}
-                      {count > 0 && (
-                        <span className={`ml-1 text-xs ${activeDay === day ? 'text-amber-200' : 'text-amber-400'}`}>
-                          {count}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
 
-              {/* Editable entries */}
-              {entriesForDay.length > 0 ? (
-                <div className="space-y-2">
-                  {entriesForDay.map((entry) => {
-                    const globalIndex = curriculum.indexOf(entry);
-                    return (
-                      <div key={globalIndex} className="flex gap-2 items-center bg-amber-50 rounded-lg p-2 text-sm">
-                        <input
-                          value={entry.startTime}
-                          onChange={(e) => updateEntry(globalIndex, 'startTime', e.target.value)}
-                          className="w-16 px-2 py-1 rounded border border-amber-200 focus:border-amber-400 focus:outline-none text-center"
-                          placeholder="09:00"
-                        />
-                        <span className="text-amber-400">-</span>
-                        <input
-                          value={entry.endTime}
-                          onChange={(e) => updateEntry(globalIndex, 'endTime', e.target.value)}
-                          className="w-16 px-2 py-1 rounded border border-amber-200 focus:border-amber-400 focus:outline-none text-center"
-                          placeholder="10:00"
-                        />
-                        <input
-                          value={entry.activity}
-                          onChange={(e) => updateEntry(globalIndex, 'activity', e.target.value)}
-                          className="flex-1 px-2 py-1 rounded border border-amber-200 focus:border-amber-400 focus:outline-none"
-                          placeholder="Activity"
-                        />
-                        <input
-                          value={entry.location}
-                          onChange={(e) => updateEntry(globalIndex, 'location', e.target.value)}
-                          className="w-24 px-2 py-1 rounded border border-amber-200 focus:border-amber-400 focus:outline-none"
-                          placeholder="Location"
-                        />
-                        <button
-                          onClick={() => removeEntry(globalIndex)}
-                          className="text-amber-400 hover:text-red-500"
-                        >
-                          &times;
-                        </button>
-                      </div>
-                    );
-                  })}
+            <CurriculumEditor
+              entries={entriesForDay}
+              onUpdate={updateEntry}
+              onRemove={removeEntry}
+              emptyMessage={`No classes found for ${activeDay}`}
+            />
+
+            {parsing && (
+              <div className="flex items-center gap-2 text-primary-600 mt-3">
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-200 border-t-primary-600" />
+                <span className="text-sm">Parsing new curriculum...</span>
+              </div>
+            )}
+          </div>
+        )}
+      </Card>
+
+      {/* Preset Locations Section */}
+      <Card
+        className="mb-5"
+        header={
+          <div className="flex items-center justify-between">
+            <h2 className="text-secondary-800 font-semibold">Preset Locations</h2>
+            <button
+              onClick={() => setShowAddPreset(!showAddPreset)}
+              className="text-sm text-primary-500 hover:text-primary-700 transition font-medium"
+            >
+              {showAddPreset ? 'Cancel' : '+ Add'}
+            </button>
+          </div>
+        }
+      >
+        {showAddPreset && (
+          <div className="mb-4 pb-4 border-b border-secondary-100">
+            <div className="space-y-3">
+              <Input
+                label="Location name"
+                value={newPresetName}
+                onChange={(e) => setNewPresetName(e.target.value)}
+                placeholder="e.g. Classroom 101, Cafeteria"
+              />
+              <div>
+                <label className="block text-sm font-medium text-secondary-700 mb-1.5">
+                  Click on map to set location
+                </label>
+                <LocationPicker
+                  lat={newPresetLat}
+                  lng={newPresetLng}
+                  radiusM={newPresetRadius}
+                  onLocationChange={(lat, lng) => {
+                    setNewPresetLat(lat);
+                    setNewPresetLng(lng);
+                  }}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-secondary-700 mb-1.5">
+                  Radius: {newPresetRadius}m
+                </label>
+                <input
+                  type="range"
+                  min={25}
+                  max={200}
+                  step={5}
+                  value={newPresetRadius}
+                  onChange={(e) => setNewPresetRadius(Number(e.target.value))}
+                  className="w-full accent-primary-500"
+                />
+                <div className="flex justify-between text-xs text-secondary-400">
+                  <span>25m</span>
+                  <span>200m</span>
                 </div>
-              ) : (
-                <p className="text-amber-400 text-sm text-center py-3">
-                  No classes found for {activeDay}
+              </div>
+              {newPresetLat !== undefined && (
+                <p className="text-xs text-secondary-400">
+                  Coordinates: {newPresetLat.toFixed(6)}, {newPresetLng?.toFixed(6)}
                 </p>
               )}
-
-              {parsing && (
-                <div className="flex items-center gap-2 text-amber-600 mt-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-amber-300 border-t-amber-600"></div>
-                  <span className="text-sm">Parsing new curriculum...</span>
-                </div>
-              )}
+              <Button
+                onClick={handleAddPreset}
+                disabled={!newPresetName || newPresetLat === undefined}
+                loading={presetLoading}
+                size="sm"
+              >
+                Save Location
+              </Button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* Create Diary Button */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
-          <p className="text-amber-500 text-sm mb-5">
+        {presets.length === 0 && !showAddPreset ? (
+          <p className="text-sm text-secondary-400 text-center py-3">
+            No preset locations defined. GPS clusters will use Google Places for labels.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {presets.map((preset) => (
+              <div
+                key={preset.id}
+                className="flex items-center justify-between bg-secondary-50 rounded-lg px-3 py-2.5"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-secondary-700 truncate">{preset.name}</p>
+                  <p className="text-xs text-secondary-400">
+                    {preset.lat.toFixed(4)}, {preset.lng.toFixed(4)} · {preset.radiusM}m radius
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleDeletePreset(preset.id)}
+                  className="text-secondary-300 hover:text-error-500 transition shrink-0 ml-2"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      {/* Create Diary CTA */}
+      <Card className="text-center">
+        <div className="py-2">
+          <svg className="w-12 h-12 mx-auto mb-3 text-primary-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+          </svg>
+          <p className="text-secondary-500 text-sm mb-4">
             Upload GPS data and photos to generate a visual diary for your students
           </p>
-          <button
+          <Button
             onClick={() => navigate('/teacher/create')}
-            className="w-full bg-amber-500 hover:bg-amber-600 text-white text-xl font-semibold py-4 rounded-xl transition shadow-md hover:shadow-lg"
+            size="lg"
+            className="w-full"
           >
             Create Diary
-          </button>
+          </Button>
         </div>
-      </div>
-    </div>
+      </Card>
+    </PageShell>
   );
 }
 

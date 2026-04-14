@@ -1,4 +1,5 @@
-import type { StayCluster } from '../../../shared/src/types/diary';
+import type { StayCluster, PresetLocation } from '../../../shared/src/types/diary';
+import { haversineMeters } from './gps-clustering';
 
 const MAPS_API_BASE = 'https://maps.googleapis.com/maps/api/place';
 
@@ -75,18 +76,39 @@ export async function queryPlaceForCluster(
 
 export async function enrichClustersWithPlaces(
   clusters: StayCluster[],
+  presetLocations?: PresetLocation[],
 ): Promise<void> {
   for (const cluster of clusters) {
+    // Check preset locations first
+    if (presetLocations && presetLocations.length > 0) {
+      const match = presetLocations.find((preset) => {
+        const dist = haversineMeters(
+          cluster.centroid.lat, cluster.centroid.lng,
+          preset.lat, preset.lng,
+        );
+        return dist <= preset.radiusM;
+      });
+
+      if (match) {
+        cluster.placeName = match.name;
+        cluster.placeSource = 'preset';
+        continue;
+      }
+    }
+
+    // Fall back to Google Places API
     try {
       const result = await queryPlaceForCluster(cluster);
       cluster.placeName = result.displayName;
       cluster.placeTypes = result.types;
       cluster.photoRef = result.photoRef ?? undefined;
+      cluster.placeSource = 'google-places';
     } catch (err) {
       console.error('Places API error for cluster:', err);
       cluster.placeName = `Location at ${cluster.centroid.lat.toFixed(4)},${cluster.centroid.lng.toFixed(4)}`;
       cluster.placeTypes = [];
       cluster.photoRef = undefined;
+      cluster.placeSource = 'fallback';
     }
   }
 }

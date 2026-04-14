@@ -1,5 +1,5 @@
 import { join } from 'path';
-import type { Diary, ScheduleEntry, GpsInputPoint, PhotoWithTimestamp } from '../../../shared/src/types/diary';
+import type { Diary, ScheduleEntry, GpsInputPoint, PhotoWithTimestamp, PresetLocation } from '../../../shared/src/types/diary';
 import { generatePageText, generatePageTextFromPhoto } from './llm';
 import { clusterStays, buildGpsTrace } from './gps-clustering';
 import { enrichClustersWithPlaces } from './google-places';
@@ -53,18 +53,19 @@ export async function generateDiaryUnified(
   gpsPoints: GpsInputPoint[],
   photos: PhotoWithTimestamp[],
   curriculum?: ScheduleEntry[],
+  presetLocations?: PresetLocation[],
 ): Promise<Diary> {
   const hasGps = gpsPoints.length > 0;
   const hasPhotos = photos.length > 0;
 
   // GPS + Photos (full unified flow)
   if (hasGps && hasPhotos) {
-    return generateUnifiedGpsPhotos(date, gpsPoints, photos, curriculum);
+    return generateUnifiedGpsPhotos(date, gpsPoints, photos, curriculum, presetLocations);
   }
 
   // GPS only
   if (hasGps) {
-    return generateFromGpsOnly(date, gpsPoints, curriculum);
+    return generateFromGpsOnly(date, gpsPoints, curriculum, presetLocations);
   }
 
   // Photos only
@@ -82,13 +83,14 @@ async function generateUnifiedGpsPhotos(
   gpsPoints: GpsInputPoint[],
   photos: PhotoWithTimestamp[],
   curriculum?: ScheduleEntry[],
+  presetLocations?: PresetLocation[],
 ): Promise<Diary> {
   const clusters = clusterStays(gpsPoints);
   if (clusters.length === 0) {
     throw new Error('No significant stops detected in GPS data');
   }
 
-  await enrichClustersWithPlaces(clusters);
+  await enrichClustersWithPlaces(clusters, presetLocations);
 
   // Match photos to clusters by TIME-OF-DAY only (ignoring date)
   const clusterPhotos: Map<number, PhotoWithTimestamp[]> = new Map();
@@ -257,13 +259,14 @@ async function generateFromGpsOnly(
   date: string,
   gpsPoints: GpsInputPoint[],
   curriculum?: ScheduleEntry[],
+  presetLocations?: PresetLocation[],
 ): Promise<Diary> {
   const clusters = clusterStays(gpsPoints);
   if (clusters.length === 0) {
     throw new Error('No significant stops detected in GPS data');
   }
 
-  await enrichClustersWithPlaces(clusters);
+  await enrichClustersWithPlaces(clusters, presetLocations);
 
   const pages = await Promise.all(
     clusters.map(async (cluster, index) => {

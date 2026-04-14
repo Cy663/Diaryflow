@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import Input from '../components/ui/Input';
+import Button from '../components/ui/Button';
+import ErrorAlert from '../components/ui/ErrorAlert';
 
 function Login() {
   const navigate = useNavigate();
@@ -25,48 +28,53 @@ function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-amber-50 flex items-center justify-center p-4">
-      <div className="max-w-sm w-full">
-        <h1 className="text-4xl font-bold text-amber-800 text-center mb-2">DiaryFlow</h1>
-        <p className="text-amber-600 text-center mb-8">Sign in to your account</p>
-
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-lg p-6 space-y-4">
-          <div>
-            <label className="block text-amber-700 text-sm font-medium mb-1">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full border border-amber-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400"
-            />
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-orange-50 to-primary-100 flex items-center justify-center p-4">
+      <div className="max-w-sm w-full animate-fade-in">
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-500 rounded-2xl shadow-lg mb-4">
+            <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+            </svg>
           </div>
+          <h1 className="text-3xl font-bold text-secondary-800 tracking-tight">DiaryFlow</h1>
+          <p className="text-secondary-500 text-sm mt-1">Sign in to your account</p>
+        </div>
 
-          <div>
-            <label className="block text-amber-700 text-sm font-medium mb-1">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full border border-amber-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400"
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-card p-6 space-y-4">
+          <Input
+            label="Email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            placeholder="you@school.com"
+          />
 
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+          <Input
+            label="Password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            placeholder="Enter your password"
+          />
 
-          <button
+          {error && <ErrorAlert message={error} onDismiss={() => setError(null)} />}
+
+          <Button
             type="submit"
-            disabled={loading}
-            className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 rounded-xl transition disabled:opacity-50"
+            loading={loading}
+            className="w-full"
+            size="lg"
           >
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
+            Sign In
+          </Button>
         </form>
 
-        <p className="text-center text-amber-600 text-sm mt-4">
+        <p className="text-center text-secondary-500 text-sm mt-5">
           Don't have an account?{' '}
-          <Link to="/register" className="text-amber-700 font-medium hover:underline">
+          <Link to="/register" className="text-primary-600 font-semibold hover:text-primary-700 transition">
             Register
           </Link>
         </p>

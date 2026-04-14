@@ -3,6 +3,10 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import type { Diary } from 'shared/types/diary';
 import { getDiary } from '../../api/diary';
 import DiaryDisplay from '../../components/DiaryDisplay';
+import PageShell from '../../components/PageShell';
+import Spinner from '../../components/ui/Spinner';
+import ErrorAlert from '../../components/ui/ErrorAlert';
+import Button from '../../components/ui/Button';
 
 function TeacherDiary() {
   const { date } = useParams<{ date: string }>();
@@ -30,45 +34,31 @@ function TeacherDiary() {
       .finally(() => setLoading(false));
   }, [date, stateDiary, navigate]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-amber-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-4 border-amber-300 border-t-amber-600"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-amber-50 flex items-center justify-center">
-        <div className="text-center bg-white rounded-2xl p-8 shadow-lg max-w-md">
-          <p className="text-red-500 text-lg mb-4">{error}</p>
-          <button onClick={() => navigate('/teacher')} className="bg-amber-500 text-white px-6 py-2 rounded-full hover:bg-amber-600 transition">
-            Back to Dashboard
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!diary) return null;
-
   return (
-    <div className="min-h-screen bg-amber-50 flex flex-col items-center justify-center p-4">
-      <div className="text-center mb-4">
-        <h1 className="text-3xl font-bold text-amber-800">Diary</h1>
-        <p className="text-amber-600">{date}</p>
-      </div>
-
-      <DiaryDisplay diary={diary} />
-
-      <button
-        onClick={() => navigate('/teacher')}
-        className="mt-4 text-amber-600 hover:text-amber-800 transition"
-      >
-        &larr; Back to Dashboard
-      </button>
-    </div>
+    <PageShell variant="teacher" maxWidth="lg" backTo="/teacher" backLabel="Dashboard" title={`Diary — ${date}`}>
+      {loading ? (
+        <div className="flex justify-center py-20">
+          <Spinner size="lg" label="Loading diary..." />
+        </div>
+      ) : error ? (
+        <div className="max-w-md mx-auto mt-12">
+          <ErrorAlert message={error} />
+          <div className="mt-4 text-center">
+            <Button variant="ghost" onClick={() => navigate('/teacher')}>
+              Back to Dashboard
+            </Button>
+          </div>
+        </div>
+      ) : diary ? (
+        <div className="flex flex-col items-center">
+          <div className="text-center mb-5">
+            <h1 className="text-2xl font-bold text-secondary-800">Diary Preview</h1>
+            <p className="text-secondary-500 text-sm">{date}</p>
+          </div>
+          <DiaryDisplay diary={diary} />
+        </div>
+      ) : null}
+    </PageShell>
   );
 }
 

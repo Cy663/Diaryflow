@@ -3,7 +3,7 @@ import type { GenerateUnifiedRequest, GenerateDiaryResponse } from '../../../sha
 import type { ApiError } from '../../../shared/src/types/api';
 import { generateDiaryUnified } from '../services/diary-generator';
 import { authenticate, requireRole } from '../middleware/auth';
-import { saveDiary, getDiary, listDiaries } from '../db';
+import { saveDiary, getDiary, listDiaries, getPresetLocations } from '../db';
 
 export const diaryRouter = Router();
 
@@ -24,7 +24,8 @@ diaryRouter.post('/generate-unified', authenticate, requireRole('teacher'), asyn
       return;
     }
 
-    const diary = await generateDiaryUnified(date, gpsPoints, photos, curriculum);
+    const presetLocations = getPresetLocations(req.user!.id);
+    const diary = await generateDiaryUnified(date, gpsPoints, photos, curriculum, presetLocations);
 
     // Persist diary
     saveDiary(req.user!.id, date, JSON.stringify(diary));

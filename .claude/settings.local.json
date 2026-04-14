@@ -1,14 +1,10 @@
 {
   "permissions": {
+    "defaultMode": "bypassPermissions",
     "allow": [
       "Bash(npm install:*)",
       "Bash(curl:*)",
       "Bash(netstat -tlnp)",
-      "Bash(taskkill.exe /PID 1372 /F)",
-      "Bash(taskkill.exe /PID 20820 /F)",
-      "Bash(netstat.exe -ano)",
-      "Bash(taskkill.exe /PID 26400 /F)",
-      "Bash(node -e \"fetch\\(''http://127.0.0.1:3001/api/health''\\).then\\(r=>r.json\\(\\)\\).then\\(d=>console.log\\(JSON.stringify\\(d\\)\\)\\).catch\\(e=>console.error\\(e.message\\)\\)\")",
       "WebSearch",
       "Bash(ls:*)",
       "Bash(npx tsc:*)",

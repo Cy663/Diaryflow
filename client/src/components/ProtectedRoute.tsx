@@ -11,8 +11,8 @@ function ProtectedRoute({ allowedRoles }: Props) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-amber-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-amber-300 border-t-amber-600"></div>
+      <div className="min-h-screen bg-secondary-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-3 border-primary-200 border-t-primary-600"></div>
       </div>
     );
   }

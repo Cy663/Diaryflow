@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
-import type { ScheduleEntry } from '../../shared/src/types/diary';
+import type { ScheduleEntry, PresetLocation } from '../../shared/src/types/diary';
 import type { UserRole } from '../../shared/src/types/user';
 
 const dbPath = join(__dirname, '..', 'data', 'diaryflow.db');
@@ -50,6 +50,18 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
   CREATE UNIQUE INDEX IF NOT EXISTS idx_diaries_teacher_date ON diaries(teacher_id, date);
+
+  CREATE TABLE IF NOT EXISTS preset_locations (
+    id TEXT PRIMARY KEY,
+    teacher_id TEXT NOT NULL REFERENCES users(id),
+    name TEXT NOT NULL,
+    lat REAL NOT NULL,
+    lng REAL NOT NULL,
+    radius_m REAL NOT NULL DEFAULT 50,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_preset_locations_teacher ON preset_locations(teacher_id);
 `);
 
 // --- Users ---
@@ -145,6 +157,71 @@ export function getDiary(teacherId: string, date: string): string | null {
 
 export function listDiaries(teacherId: string): { id: string; date: string; createdAt: string }[] {
   return db.prepare('SELECT id, date, created_at as createdAt FROM diaries WHERE teacher_id = ? ORDER BY date DESC').all(teacherId) as any[];
+}
+
+// --- Preset Locations ---
+
+interface PresetLocationRow {
+  id: string;
+  teacher_id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  radius_m: number;
+  created_at: string;
+  updated_at: string;
+}
+
+function rowToPresetLocation(row: PresetLocationRow): PresetLocation {
+  return {
+    id: row.id,
+    name: row.name,
+    lat: row.lat,
+    lng: row.lng,
+    radiusM: row.radius_m,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export function getPresetLocations(teacherId: string): PresetLocation[] {
+  const rows = db.prepare('SELECT * FROM preset_locations WHERE teacher_id = ? ORDER BY name').all(teacherId) as PresetLocationRow[];
+  return rows.map(rowToPresetLocation);
+}
+
+export function createPresetLocation(
+  teacherId: string,
+  name: string,
+  lat: number,
+  lng: number,
+  radiusM: number,
+): PresetLocation {
+  const id = randomUUID();
+  const now = new Date().toISOString();
+  db.prepare(
+    'INSERT INTO preset_locations (id, teacher_id, name, lat, lng, radius_m, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+  ).run(id, teacherId, name, lat, lng, radiusM, now, now);
+  const row = db.prepare('SELECT * FROM preset_locations WHERE id = ?').get(id) as PresetLocationRow;
+  return rowToPresetLocation(row);
+}
+
+export function updatePresetLocation(
+  id: string,
+  name: string,
+  lat: number,
+  lng: number,
+  radiusM: number,
+): PresetLocation {
+  const now = new Date().toISOString();
+  db.prepare(
+    'UPDATE preset_locations SET name = ?, lat = ?, lng = ?, radius_m = ?, updated_at = ? WHERE id = ?',
+  ).run(name, lat, lng, radiusM, now, id);
+  const row = db.prepare('SELECT * FROM preset_locations WHERE id = ?').get(id) as PresetLocationRow;
+  return rowToPresetLocation(row);
+}
+
+export function deletePresetLocation(id: string): void {
+  db.prepare('DELETE FROM preset_locations WHERE id = ?').run(id);
 }
 
 export default db;
