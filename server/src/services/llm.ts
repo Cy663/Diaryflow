@@ -27,8 +27,9 @@ export async function generatePageText(context: PageContext): Promise<string> {
 
     const prompt = `Write 1-2 short sentences for a child's visual diary.
 Speak in second person ("you"). Warm and gentle tone.
-End with one simple question to prompt the child to share.
+End with one simple question related to the activity to prompt the child to share.
 Keep it brief — no more than 30 words. Do not use names or "dear".
+Focus only on the given activity — do not assume meals or other activities based on time of day.
 
 Activity: ${activity}
 Time: ${timeRange}
@@ -54,7 +55,8 @@ Output only the diary text.`;
     const text = data.choices?.[0]?.message?.content?.trim();
     if (!text) throw new Error('Empty response');
     return text;
-  } catch {
+  } catch (err) {
+    console.error('[LLM] generatePageText failed:', err);
     return fallbackText(context);
   }
 }
@@ -265,12 +267,12 @@ Reply with ONLY the letter: A or B`;
 function fallbackText(context: PageContext): string {
   const { activity, location } = context;
   const templates = [
-    `You took a ride to school today! What did you see on the way?`,
+    `You visited ${location} today! What did you see there?`,
     `You had ${activity} at ${location}. What was the best part?`,
-    `Time for ${activity}! What did you work on today?`,
-    `Lunchtime at ${location}! What was yummy today?`,
-    `You had ${activity} this afternoon. Did you learn something new?`,
-    `School's out! What was your favorite part of today?`,
+    `Time for ${activity}! What did you enjoy most?`,
+    `You spent some time at ${location}. What was fun today?`,
+    `You had ${activity}. Did you learn something new?`,
+    `Another stop at ${location}! What was your favorite part?`,
   ];
   return templates[context.pageNumber % templates.length];
 }
