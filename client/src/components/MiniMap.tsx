@@ -302,7 +302,7 @@ function MiniMap({ gpsTrace, currentPageIndex, pages, onMarkerClick }: MiniMapPr
         zoomControl
         streetViewControl={false}
         mapTypeControl={false}
-        fullscreenControl={false}
+        fullscreenControl
         style={{ width: '100%', height: '100%', borderRadius: '0.75rem' }}
       >
         <MapContent
