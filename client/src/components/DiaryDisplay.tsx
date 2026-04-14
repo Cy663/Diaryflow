@@ -47,7 +47,7 @@ function DiaryDisplay({ diary }: Props) {
 
       {/* Page content with animation */}
       <div key={animKey.current} className={animClass}>
-        {/* Photos — polaroid style */}
+        {/* Photos — polaroid style (only render when images exist) */}
         {page.placesImageUrl ? (
           <div className="bg-diary-page p-5 flex gap-4 justify-center">
             <div className="diary-photo diary-photo-tilt-left flex-1 max-w-[60%]">
@@ -65,7 +65,7 @@ function DiaryDisplay({ diary }: Props) {
               />
             </div>
           </div>
-        ) : (
+        ) : page.imageUrl ? (
           <div className="bg-diary-page p-5 flex justify-center">
             <div className="diary-photo max-w-lg w-full">
               <img
@@ -75,7 +75,7 @@ function DiaryDisplay({ diary }: Props) {
               />
             </div>
           </div>
-        )}
+        ) : null}
 
         {/* Illustration */}
         {page.illustrationUrl && (

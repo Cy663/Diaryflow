@@ -3,7 +3,6 @@ import type { Diary, ScheduleEntry, GpsInputPoint, PhotoWithTimestamp, PresetLoc
 import { generatePageText, generatePageTextFromPhoto } from './llm';
 import { clusterStays, buildGpsTrace } from './gps-clustering';
 import { enrichClustersWithPlaces } from './google-places';
-import { getFallbackImage } from './image-fallback';
 
 const uploadsDir = join(__dirname, '..', '..', 'uploads');
 
@@ -190,8 +189,8 @@ async function generateUnifiedGpsPhotos(
           curriculumHint,
         });
       } else {
-        // No photos at all — fallback image
-        imageUrl = getFallbackImage(types);
+        // No photos at all — leave image empty
+        imageUrl = '';
         text = await generatePageText({
           activity: currEntry?.activity || placeName,
           location: placeName,
@@ -278,12 +277,10 @@ async function generateFromGpsOnly(
       const endHHMM = isoToHHMM(cluster.endTime);
       const timeRange = formatTimeRange(startHHMM, endHHMM);
 
-      let imageUrl: string;
+      let imageUrl = '';
       if (cluster.photoRef) {
         const encoded = Buffer.from(cluster.photoRef).toString('base64url');
         imageUrl = `/api/places/photo/${encoded}`;
-      } else {
-        imageUrl = getFallbackImage(types);
       }
 
       const currEntry = findCurriculumForTimeRange(startHHMM, endHHMM, curriculum);

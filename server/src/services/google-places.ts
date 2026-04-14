@@ -1,7 +1,7 @@
 import type { StayCluster, PresetLocation } from '../../../shared/src/types/diary';
 import { haversineMeters } from './gps-clustering';
 
-const MAPS_API_BASE = 'https://maps.googleapis.com/maps/api/place';
+const PLACES_API_BASE = 'https://places.googleapis.com/v1';
 
 interface PlaceResult {
   displayName: string;
@@ -21,19 +21,44 @@ export async function queryPlaceForCluster(
   const apiKey = getApiKey();
   const { lat, lng } = cluster.centroid;
 
-  const url = `${MAPS_API_BASE}/nearbysearch/json?location=${lat},${lng}&radius=50&key=${apiKey}`;
-  const res = await fetch(url);
+  const url = `${PLACES_API_BASE}/places:searchNearby`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': apiKey,
+      'X-Goog-FieldMask': 'places.displayName,places.types,places.photos',
+    },
+    body: JSON.stringify({
+      locationRestriction: {
+        circle: {
+          center: { latitude: lat, longitude: lng },
+          radius: 50.0,
+        },
+      },
+      maxResultCount: 10,
+    }),
+  });
 
   if (!res.ok) {
+    const body = await res.text();
+    console.error('[Places] API error:', res.status, body);
     throw new Error(`Places API returned ${res.status}`);
   }
 
-  const data = await res.json() as { results?: Array<{ name?: string; types?: string[]; photos?: Array<{ photo_reference?: string }> }> };
-  const results = data.results || [];
+  const data = await res.json() as {
+    places?: Array<{
+      displayName?: { text?: string };
+      types?: string[];
+      photos?: Array<{ name?: string }>;
+    }>;
+  };
+
+  const results = data.places || [];
+  console.log('[Places] got', results.length, 'results');
 
   // Rank results: prefer meaningful places (school, park, restaurant, library)
   // over generic POIs (ATMs, insurance), over routes/localities
-  // High-value types for a child's diary context
   const TOP_TYPES = [
     'school', 'secondary_school', 'primary_school', 'university',
     'library', 'park', 'playground', 'swimming_pool', 'museum',
@@ -56,7 +81,6 @@ export async function queryPlaceForCluster(
   const ranked = [...results].sort((a, b) => {
     const diff = placeScore(b) - placeScore(a);
     if (diff !== 0) return diff;
-    // Tie-break: prefer places with photos
     return (b.photos?.length || 0) - (a.photos?.length || 0);
   });
   const poi = ranked[0];
@@ -65,10 +89,11 @@ export async function queryPlaceForCluster(
     return { displayName: 'Location', types: [], photoRef: null };
   }
 
-  const photoRef = poi.photos?.[0]?.photo_reference || null;
+  // New API photo name format: "places/{placeId}/photos/{photoRef}"
+  const photoRef = poi.photos?.[0]?.name || null;
 
   return {
-    displayName: poi.name || 'Unknown Place',
+    displayName: poi.displayName?.text || 'Unknown Place',
     types: poi.types || [],
     photoRef,
   };
@@ -98,7 +123,9 @@ export async function enrichClustersWithPlaces(
 
     // Fall back to Google Places API
     try {
+      console.log('[Places] querying for cluster at', cluster.centroid, '| API key present:', !!process.env.GOOGLE_PLACES_API_KEY);
       const result = await queryPlaceForCluster(cluster);
+      console.log('[Places] result:', JSON.stringify(result));
       cluster.placeName = result.displayName;
       cluster.placeTypes = result.types;
       cluster.photoRef = result.photoRef ?? undefined;
@@ -114,11 +141,12 @@ export async function enrichClustersWithPlaces(
 }
 
 export async function fetchPlacePhoto(
-  photoRef: string,
+  photoName: string,
   maxWidthPx = 800,
 ): Promise<{ buffer: Buffer; contentType: string }> {
   const apiKey = getApiKey();
-  const url = `${MAPS_API_BASE}/photo?maxwidth=${maxWidthPx}&photo_reference=${photoRef}&key=${apiKey}`;
+  // New API: GET /v1/{photoName}/media?maxWidthPx=N&key=KEY
+  const url = `${PLACES_API_BASE}/${photoName}/media?maxWidthPx=${maxWidthPx}&key=${apiKey}`;
 
   const res = await fetch(url, { redirect: 'follow' });
   if (!res.ok) throw new Error(`Place photo fetch failed: ${res.status}`);
