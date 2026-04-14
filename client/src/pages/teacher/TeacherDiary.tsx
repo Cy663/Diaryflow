@@ -35,7 +35,7 @@ function TeacherDiary() {
   }, [date, stateDiary, navigate]);
 
   return (
-    <PageShell variant="teacher" maxWidth="lg" backTo="/teacher" backLabel="Dashboard" title={`Diary — ${date}`}>
+    <PageShell variant="teacher" maxWidth="xl" backTo="/teacher" backLabel="Dashboard" title={`Diary — ${date}`}>
       {loading ? (
         <div className="flex justify-center py-20">
           <Spinner size="lg" label="Loading diary..." />

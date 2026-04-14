@@ -20,14 +20,15 @@ function DiaryDisplay({ diary }: Props) {
   };
 
   return (
-    <div className="font-diary bg-diary-bg rounded-3xl shadow-diary max-w-3xl w-full overflow-hidden border border-diary-border">
+    <div className="font-diary bg-diary-bg rounded-3xl shadow-diary max-w-6xl w-full overflow-hidden border border-diary-border">
       {/* Mini-map overview */}
       {hasGps && (
-        <div className="bg-primary-50/60 border-b border-diary-border px-4 pt-3 pb-1 h-[180px]">
+        <div className="bg-primary-50/60 border-b border-diary-border px-4 pt-3 pb-1 h-96">
           <MiniMap
             gpsTrace={diary.gpsTrace}
             currentPageIndex={expandedIndex ?? diary.pages.length - 1}
             pages={diary.pages}
+            onMarkerClick={(i) => setExpandedIndex(prev => (prev === i ? null : i))}
           />
         </div>
       )}
@@ -39,7 +40,7 @@ function DiaryDisplay({ diary }: Props) {
       </div>
 
       {/* Timeline */}
-      <div className="relative px-4 sm:px-6 pb-8 pt-4">
+      <div className="relative px-6 sm:px-10 lg:px-16 pb-8 pt-4">
         {/* Vertical dashed line */}
         <div className="absolute left-7 md:left-1/2 top-0 bottom-0 w-0 border-l-2 border-dashed border-primary-300/60 md:-translate-x-px" />
 

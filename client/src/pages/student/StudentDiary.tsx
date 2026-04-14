@@ -27,7 +27,7 @@ function StudentDiary() {
   }, [date, navigate]);
 
   return (
-    <PageShell variant="student" maxWidth="lg" backTo="/student" backLabel="Home" title={`Diary — ${date}`}>
+    <PageShell variant="student" maxWidth="xl" backTo="/student" backLabel="Home" title={`Diary — ${date}`}>
       {loading ? (
         <div className="flex justify-center py-20">
           <Spinner size="lg" label="Loading diary..." />

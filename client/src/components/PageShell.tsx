@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 interface PageShellProps {
   children: ReactNode;
   variant?: 'teacher' | 'student';
-  maxWidth?: 'sm' | 'md' | 'lg';
+  maxWidth?: 'sm' | 'md' | 'lg' | 'xl';
   title?: string;
   backTo?: string;
   backLabel?: string;
@@ -14,6 +14,7 @@ const maxWidthMap = {
   sm: 'max-w-lg',
   md: 'max-w-2xl',
   lg: 'max-w-4xl',
+  xl: 'max-w-7xl',
 };
 
 export default function PageShell({

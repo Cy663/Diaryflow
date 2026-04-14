@@ -54,7 +54,7 @@ function StudentHome() {
   })();
 
   return (
-    <PageShell variant="student" maxWidth="lg">
+    <PageShell variant="student" maxWidth="xl">
       <h1 className="text-2xl font-bold text-primary-800 mb-1 font-diary">My Diary</h1>
 
       {/* Week calendar */}
